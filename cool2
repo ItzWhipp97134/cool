@@ -1,3 +1,88 @@
+-- Example aimbot logic (for demonstration)
+local aimbotEnabled = false
+local aimbotSmoothness = 3
+local aimbotConnection = nil
+local aimbotKey = Enum.UserInputType.MouseButton2 -- Default MB2
+local holdingKey = false
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+function GetClosestPlayer()
+    local closest, closestDist = nil, math.huge
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
+            local head = player.Character.Head
+            local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+            if onScreen then
+                local dist = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
+                if dist < closestDist then
+                    closestDist = dist
+                    closest = head
+                end
+            end
+        end
+    end
+    return closest
+end
+
+function AimAt(target, smoothness)
+    if not target then return end
+    local camCF = Camera.CFrame
+    local targetPos = target.Position
+    local direction = (targetPos - camCF.Position).Unit
+    local newCF = CFrame.new(camCF.Position, camCF.Position + direction)
+    -- Lower smoothness = snappier, higher = slower
+    local lerpAlpha = math.clamp(1 / math.max(smoothness, 0.01), 0.01, 1)
+    Camera.CFrame = camCF:Lerp(newCF, lerpAlpha)
+end
+
+function EnableAimbot()
+    if aimbotEnabled then return end
+    aimbotEnabled = true
+    print("Aimbot enabled!")
+    aimbotConnection = RunService.RenderStepped:Connect(function()
+        if holdingKey then
+            local target = GetClosestPlayer()
+            AimAt(target, aimbotSmoothness)
+        end
+    end)
+end
+
+function DisableAimbot()
+    aimbotEnabled = false
+    print("Aimbot disabled!")
+    if aimbotConnection then
+        aimbotConnection:Disconnect()
+        aimbotConnection = nil
+    end
+end
+
+function SetAimbotSmoothness(val)
+    aimbotSmoothness = val
+    print("Smoothness set to", val)
+end
+
+function SetAimbotKeybind(inputType)
+    aimbotKey = inputType
+    print("Aimbot keybind set to", tostring(inputType))
+end
+
+-- Keybind detection
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    if input.UserInputType == aimbotKey or input.KeyCode == aimbotKey then
+        holdingKey = true
+    end
+end)
+UserInputService.InputEnded:Connect(function(input, processed)
+    if input.UserInputType == aimbotKey or input.KeyCode == aimbotKey then
+        holdingKey = false
+    end
+end)
+
 local Photon = {}
 Photon.__index = Photon
 
@@ -10,21 +95,88 @@ Tab.__index = Tab
 local Section = {}
 Section.__index = Section
 
--- Create the main window with sidebar, top bar, columns, and bottom bar
+-- Theme definitions
+local themes = {
+    Default = {
+        Main = Color3.fromRGB(28, 28, 34),
+        TopBar = Color3.fromRGB(35, 35, 40),
+        Sidebar = Color3.fromRGB(24, 24, 28),
+        Section = Color3.fromRGB(38, 38, 48),
+        Accent = Color3.fromRGB(60, 120, 200)
+    },
+    Red = {
+        Main = Color3.fromRGB(34, 28, 28),
+        TopBar = Color3.fromRGB(60, 30, 30),
+        Sidebar = Color3.fromRGB(40, 20, 20),
+        Section = Color3.fromRGB(60, 40, 40),
+        Accent = Color3.fromRGB(200, 60, 60)
+    },
+    Blue = {
+        Main = Color3.fromRGB(28, 34, 40),
+        TopBar = Color3.fromRGB(35, 40, 60),
+        Sidebar = Color3.fromRGB(24, 28, 40),
+        Section = Color3.fromRGB(38, 48, 60),
+        Accent = Color3.fromRGB(60, 120, 200)
+    },
+    Light = {
+        Main = Color3.fromRGB(230, 230, 240),
+        TopBar = Color3.fromRGB(210, 210, 220),
+        Sidebar = Color3.fromRGB(200, 200, 210),
+        Section = Color3.fromRGB(220, 220, 230),
+        Accent = Color3.fromRGB(60, 120, 200)
+    }
+}
+
 function Photon:CreateWindow(options)
     local self = setmetatable({}, Window)
+    local theme = themes[options.Theme] or themes.Default
+    self.Theme = theme
+    self.Name = options.Name or "PhotonUI"
+    self.Icon = options.Icon or 0
+    self.LoadingTitle = options.LoadingTitle
+    self.LoadingSubtitle = options.LoadingSubtitle
 
     -- Create ScreenGui
     local gui = Instance.new("ScreenGui")
-    gui.Name = options.Name or "PhotonUI"
+    gui.Name = self.Name
     gui.Parent = game.CoreGui
     gui.ResetOnSpawn = false
+
+    -- Optional loading screen
+    if self.LoadingTitle or self.LoadingSubtitle then
+        local loadingFrame = Instance.new("Frame", gui)
+        loadingFrame.Size = UDim2.new(1, 0, 1, 0)
+        loadingFrame.BackgroundColor3 = theme.Main
+        loadingFrame.ZIndex = 100
+        local loadingTitle = Instance.new("TextLabel", loadingFrame)
+        loadingTitle.Size = UDim2.new(1, 0, 0, 60)
+        loadingTitle.Position = UDim2.new(0, 0, 0.5, -60)
+        loadingTitle.BackgroundTransparency = 1
+        loadingTitle.Text = self.LoadingTitle or ""
+        loadingTitle.Font = Enum.Font.GothamBold
+        loadingTitle.TextSize = 32
+        loadingTitle.TextColor3 = theme.Accent
+        loadingTitle.TextXAlignment = Enum.TextXAlignment.Center
+        loadingTitle.TextYAlignment = Enum.TextYAlignment.Center
+        local loadingSubtitle = Instance.new("TextLabel", loadingFrame)
+        loadingSubtitle.Size = UDim2.new(1, 0, 0, 40)
+        loadingSubtitle.Position = UDim2.new(0, 0, 0.5, 10)
+        loadingSubtitle.BackgroundTransparency = 1
+        loadingSubtitle.Text = self.LoadingSubtitle or ""
+        loadingSubtitle.Font = Enum.Font.Gotham
+        loadingSubtitle.TextSize = 22
+        loadingSubtitle.TextColor3 = theme.Accent
+        loadingSubtitle.TextXAlignment = Enum.TextXAlignment.Center
+        loadingSubtitle.TextYAlignment = Enum.TextYAlignment.Center
+        wait(1)
+        loadingFrame:Destroy()
+    end
 
     -- Main window frame
     local main = Instance.new("Frame", gui)
     main.Size = UDim2.new(0, 900, 0, 500)
     main.Position = UDim2.new(0.5, -450, 0.5, -250)
-    main.BackgroundColor3 = Color3.fromRGB(28, 28, 34)
+    main.BackgroundColor3 = theme.Main
     main.BorderSizePixel = 0
     main.Active = true
     main.Draggable = true
@@ -42,20 +194,34 @@ function Photon:CreateWindow(options)
     -- Top Bar
     local topBar = Instance.new("Frame", main)
     topBar.Size = UDim2.new(1, 0, 0, 44)
-    topBar.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+    topBar.BackgroundColor3 = theme.TopBar
     topBar.BorderSizePixel = 0
     topBar.ZIndex = 3
     local topBarCorner = Instance.new("UICorner", topBar)
     topBarCorner.CornerRadius = UDim.new(0, 12)
+    -- Icon
+    if self.Icon and self.Icon ~= 0 then
+        local icon = Instance.new("ImageLabel", topBar)
+        icon.Size = UDim2.new(0, 32, 0, 32)
+        icon.Position = UDim2.new(0, 8, 0.5, -16)
+        icon.BackgroundTransparency = 1
+        icon.ZIndex = 4
+        if type(self.Icon) == "string" then
+            -- Lucide icon (use a Lucide icon asset or fallback)
+            icon.Image = "rbxassetid://7733964641" -- fallback Lucide icon
+        else
+            icon.Image = "rbxassetid://" .. tostring(self.Icon)
+        end
+    end
     local title = Instance.new("TextLabel", topBar)
     title.Size = UDim2.new(1, 0, 1, 0)
     title.BackgroundTransparency = 1
-    title.Text = options.Name or "photon"
+    title.Text = self.Name
     title.Font = Enum.Font.GothamBold
     title.TextSize = 22
-    title.TextColor3 = Color3.fromRGB(230, 230, 240)
+    title.TextColor3 = theme.Accent
     title.TextXAlignment = Enum.TextXAlignment.Left
-    title.Position = UDim2.new(0, 16, 0, 0)
+    title.Position = UDim2.new(0, 48, 0, 0)
     title.ZIndex = 4
 
     -- Close button
@@ -78,7 +244,7 @@ function Photon:CreateWindow(options)
     local sidebar = Instance.new("Frame", main)
     sidebar.Size = UDim2.new(0, 140, 1, -44-48)
     sidebar.Position = UDim2.new(0, 0, 0, 44)
-    sidebar.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
+    sidebar.BackgroundColor3 = theme.Sidebar
     sidebar.BorderSizePixel = 0
     sidebar.ZIndex = 4
     local sidebarCorner = Instance.new("UICorner", sidebar)
@@ -124,7 +290,8 @@ function Photon:CreateWindow(options)
 end
 
 -- Add a tab to the sidebar
-function Window:CreateTab(name)
+function Window:CreateTab(options)
+    local name = type(options) == "table" and options.Name or tostring(options)
     local selfWindow = self
     local tab = setmetatable({}, Tab)
     tab.Name = name
@@ -174,7 +341,8 @@ function Window:CreateTab(name)
 end
 
 -- Add a section (column) to the current tab
-function Tab:CreateSection(name)
+function Tab:CreateSection(options)
+    local name = type(options) == "table" and options.Name or tostring(options)
     local section = setmetatable({}, Section)
     section.Name = name
     section.Controls = {}
@@ -267,5 +435,329 @@ function Section:CreateToggle(options)
         end
     end)
 end
+
+-- Add a slider to a section (column)
+function Section:CreateSlider(options)
+    local min = options.Min or 0
+    local max = options.Max or 10
+    local value = options.Default or min
+
+    local sliderFrame = Instance.new("Frame", self.Frame)
+    sliderFrame.Size = UDim2.new(1, -16, 0, 56)
+    sliderFrame.BackgroundTransparency = 1
+    sliderFrame.ZIndex = 9
+
+    -- Name label (above value)
+    local label = Instance.new("TextLabel", sliderFrame)
+    label.Size = UDim2.new(1, 0, 0, 18)
+    label.Position = UDim2.new(0, 0, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = options.Name or "Slider"
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 15
+    label.TextColor3 = Color3.fromRGB(220, 220, 230)
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.ZIndex = 10
+
+    -- Value label (centered, below name, above bar)
+    local valueLabel = Instance.new("TextLabel", sliderFrame)
+    valueLabel.Size = UDim2.new(1, 0, 0, 18)
+    valueLabel.Position = UDim2.new(0, 0, 0, 18)
+    valueLabel.BackgroundTransparency = 1
+    valueLabel.Text = tostring(value)
+    valueLabel.Font = Enum.Font.Gotham
+    valueLabel.TextSize = 15
+    valueLabel.TextColor3 = Color3.fromRGB(220, 220, 230)
+    valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+    valueLabel.ZIndex = 10
+
+    -- Slider bar (below value label)
+    local sliderBar = Instance.new("Frame", sliderFrame)
+    sliderBar.Size = UDim2.new(1, 0, 0, 6)
+    sliderBar.Position = UDim2.new(0, 0, 0, 36)
+    sliderBar.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+    sliderBar.ZIndex = 11
+    local sliderBarCorner = Instance.new("UICorner", sliderBar)
+    sliderBarCorner.CornerRadius = UDim.new(1, 0)
+
+    local sliderFill = Instance.new("Frame", sliderBar)
+    sliderFill.Size = UDim2.new((value-min)/(max-min), 0, 1, 0)
+    sliderFill.BackgroundColor3 = Color3.fromRGB(60, 180, 120)
+    sliderFill.ZIndex = 12
+    local sliderFillCorner = Instance.new("UICorner", sliderFill)
+    sliderFillCorner.CornerRadius = UDim.new(1, 0)
+
+    local UserInputService = game:GetService("UserInputService")
+    local dragging = false
+    local window = self.Frame.Parent.Parent.Parent.Parent -- main window frame
+
+    local function updateSlider(input)
+        local rel = (input.Position.X - sliderBar.AbsolutePosition.X) / sliderBar.AbsoluteSize.X
+        rel = math.clamp(rel, 0, 1)
+        value = math.floor((min + (max-min)*rel)*100)/100
+        sliderFill.Size = UDim2.new(rel, 0, 1, 0)
+        valueLabel.Text = tostring(value)
+        if options.Callback then options.Callback(value) end
+    end
+
+    sliderBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            if window then window.Draggable = false end
+            updateSlider(input)
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            updateSlider(input)
+        end
+    end)
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+            if window then window.Draggable = true end
+        end
+    end)
+    if options.Callback then options.Callback(value) end
+end
+
+function Section:CreateKeybind(options)
+    local keybindFrame = Instance.new("Frame", self.Frame)
+    keybindFrame.Size = UDim2.new(1, -16, 0, 36)
+    keybindFrame.BackgroundTransparency = 1
+    keybindFrame.ZIndex = 9
+
+    local label = Instance.new("TextLabel", keybindFrame)
+    label.Size = UDim2.new(0.6, 0, 1, 0)
+    label.Position = UDim2.new(0, 0, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = options.Name or "Keybind"
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 15
+    label.TextColor3 = Color3.fromRGB(220, 220, 230)
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.ZIndex = 10
+
+    local keyBtn = Instance.new("TextButton", keybindFrame)
+    keyBtn.Size = UDim2.new(0, 80, 0, 24)
+    keyBtn.Position = UDim2.new(1, -90, 0.5, -12)
+    keyBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+    keyBtn.Text = options.DefaultText or "MB2"
+    keyBtn.Font = Enum.Font.Gotham
+    keyBtn.TextSize = 14
+    keyBtn.TextColor3 = Color3.fromRGB(220, 220, 230)
+    keyBtn.ZIndex = 11
+    local keyBtnCorner = Instance.new("UICorner", keyBtn)
+    keyBtnCorner.CornerRadius = UDim.new(1, 0)
+
+    local waitingForKey = false
+    keyBtn.MouseButton1Click:Connect(function()
+        keyBtn.Text = "..."
+        waitingForKey = true
+    end)
+    UserInputService.InputBegan:Connect(function(input, processed)
+        if waitingForKey and not processed then
+            waitingForKey = false
+            local keyName = input.UserInputType.Name ~= "Keyboard" and input.UserInputType.Name or input.KeyCode.Name
+            keyBtn.Text = keyName
+            if options.Callback then options.Callback(input.UserInputType ~= Enum.UserInputType.Keyboard and input.UserInputType or input.KeyCode) end
+        end
+    end)
+end
+
+-- Add Color Picker to Section
+function Section:CreateColorPicker(options)
+    local colorFrame = Instance.new("Frame", self.Frame)
+    colorFrame.Size = UDim2.new(1, -16, 0, 36)
+    colorFrame.BackgroundTransparency = 1
+    colorFrame.ZIndex = 9
+
+    local label = Instance.new("TextLabel", colorFrame)
+    label.Size = UDim2.new(0.6, 0, 1, 0)
+    label.Position = UDim2.new(0, 0, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = options.Name or "Color"
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 15
+    label.TextColor3 = Color3.fromRGB(220, 220, 230)
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.ZIndex = 10
+
+    local colorBtn = Instance.new("TextButton", colorFrame)
+    colorBtn.Size = UDim2.new(0, 36, 0, 24)
+    colorBtn.Position = UDim2.new(1, -46, 0.5, -12)
+    colorBtn.BackgroundColor3 = options.Default or Color3.fromRGB(0,255,0)
+    colorBtn.Text = ""
+    colorBtn.ZIndex = 11
+    local colorBtnCorner = Instance.new("UICorner", colorBtn)
+    colorBtnCorner.CornerRadius = UDim.new(1, 0)
+
+    colorBtn.MouseButton1Click:Connect(function()
+        -- Simple color cycle for demonstration (red -> green -> blue)
+        local current = colorBtn.BackgroundColor3
+        local nextColor = Color3.fromRGB(0,255,0)
+        if current == Color3.fromRGB(0,255,0) then nextColor = Color3.fromRGB(0,0,255)
+        elseif current == Color3.fromRGB(0,0,255) then nextColor = Color3.fromRGB(255,0,0)
+        elseif current == Color3.fromRGB(255,0,0) then nextColor = Color3.fromRGB(0,255,0) end
+        colorBtn.BackgroundColor3 = nextColor
+        if options.Callback then options.Callback(nextColor) end
+    end)
+end
+
+function Section:CreateDropdown(options)
+    local dropdownFrame = Instance.new("Frame", self.Frame)
+    dropdownFrame.Size = UDim2.new(1, -16, 0, 36)
+    dropdownFrame.BackgroundTransparency = 1
+    dropdownFrame.ZIndex = 9
+
+    local label = Instance.new("TextLabel", dropdownFrame)
+    label.Size = UDim2.new(0.6, 0, 1, 0)
+    label.Position = UDim2.new(0, 0, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = options.Name or "Dropdown"
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 15
+    label.TextColor3 = Color3.fromRGB(220, 220, 230)
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.ZIndex = 10
+
+    local dropBtn = Instance.new("TextButton", dropdownFrame)
+    dropBtn.Size = UDim2.new(0, 80, 0, 24)
+    dropBtn.Position = UDim2.new(1, -90, 0.5, -12)
+    dropBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+    dropBtn.Text = options.Default or options.Options[1]
+    dropBtn.Font = Enum.Font.Gotham
+    dropBtn.TextSize = 14
+    dropBtn.TextColor3 = Color3.fromRGB(220, 220, 230)
+    dropBtn.ZIndex = 11
+    local dropBtnCorner = Instance.new("UICorner", dropBtn)
+    dropBtnCorner.CornerRadius = UDim.new(1, 0)
+
+    local open = false
+    local dropdownList
+    dropBtn.MouseButton1Click:Connect(function()
+        if open then
+            if dropdownList then dropdownList:Destroy() end
+            open = false
+            return
+        end
+        open = true
+        dropdownList = Instance.new("Frame", dropdownFrame)
+        dropdownList.Size = UDim2.new(0, 80, 0, #options.Options * 22)
+        dropdownList.Position = UDim2.new(1, -90, 1, 0)
+        dropdownList.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
+        dropdownList.ZIndex = 12
+        local listLayout = Instance.new("UIListLayout", dropdownList)
+        listLayout.FillDirection = Enum.FillDirection.Vertical
+        listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        for _, opt in ipairs(options.Options) do
+            local optBtn = Instance.new("TextButton", dropdownList)
+            optBtn.Size = UDim2.new(1, 0, 0, 22)
+            optBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+            optBtn.Text = opt
+            optBtn.Font = Enum.Font.Gotham
+            optBtn.TextSize = 14
+            optBtn.TextColor3 = Color3.fromRGB(220, 220, 230)
+            optBtn.ZIndex = 13
+            optBtn.MouseButton1Click:Connect(function()
+                dropBtn.Text = opt
+                if options.Callback then options.Callback(opt) end
+                dropdownList:Destroy()
+                open = false
+            end)
+        end
+    end)
+end
+
+-- Example usage for executor (Rayfield-style):
+local Window = Photon:CreateWindow({
+    Name = "Rayfield Example Window",
+    Icon = 0, -- or Roblox asset id or Lucide string
+    LoadingTitle = "Rayfield Interface Suite",
+    LoadingSubtitle = "by Sirius",
+    Theme = "Red"
+})
+local Tab = Window:CreateTab({ Name = "Aimbot" })
+local Section = Tab:CreateSection({ Name = "Main" })
+
+Section:CreateToggle({
+    Name = "Aimbot Enabled",
+    CurrentValue = false,
+    Callback = function(state)
+        if state then
+            EnableAimbot()
+        else
+            DisableAimbot()
+        end
+    end
+})
+
+Section:CreateSlider({
+    Name = "Smoothness",
+    Min = 1,
+    Max = 10,
+    Default = 3,
+    Callback = function(val)
+        SetAimbotSmoothness(val)
+    end
+})
+
+Section:CreateSlider({
+    Name = "FOV",
+    Min = 10,
+    Max = 300,
+    Default = 100,
+    Callback = function(val)
+        SetAimbotFOV(val)
+    end
+})
+
+Section:CreateKeybind({
+    Name = "Aimbot Keybind",
+    DefaultText = "MB2",
+    Callback = function(newKey)
+        SetAimbotKeybind(newKey)
+    end
+})
+
+Section:CreateDropdown({
+    Name = "Target Part",
+    Options = {"Head", "HumanoidRootPart", "Torso"},
+    Default = "Head",
+    Callback = function(opt)
+        SetAimbotTargetPart(opt)
+    end
+})
+
+-- Add Visuals tab with ESP controls
+local VisualsTab = Window:CreateTab({ Name = "Visuals" })
+local ESPSection = VisualsTab:CreateSection({ Name = "ESP" })
+ESPSection:CreateToggle({
+    Name = "Box ESP",
+    CurrentValue = false,
+    Callback = function(state)
+        if state then
+            EnableESP()
+        else
+            DisableESP()
+        end
+    end
+})
+ESPSection:CreateColorPicker({
+    Name = "Box Color",
+    Default = Color3.fromRGB(0,255,0),
+    Callback = function(color)
+        SetESPColor(color)
+    end
+})
+ESPSection:CreateSlider({
+    Name = "Box Thickness",
+    Min = 1,
+    Max = 5,
+    Default = 2,
+    Callback = function(val)
+        SetESPThickness(val)
+    end
+})
 
 return setmetatable({}, Photon) 
