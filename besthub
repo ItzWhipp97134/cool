@@ -3,10 +3,31 @@
 local BestHub = {}
 BestHub.__index = BestHub
 
--- Store internal references
 local UIS = game:GetService("UserInputService")
 local TS = game:GetService("TweenService")
 local CoreGui = game:GetService("CoreGui")
+
+-- Themes
+local Themes = {
+    ["Default"] = {
+        Background = Color3.fromRGB(25, 25, 25),
+        Navbar = Color3.fromRGB(20, 20, 20),
+        Button = Color3.fromRGB(35, 35, 35),
+        Text = Color3.fromRGB(255, 255, 255)
+    },
+    ["Light"] = {
+        Background = Color3.fromRGB(240, 240, 240),
+        Navbar = Color3.fromRGB(220, 220, 220),
+        Button = Color3.fromRGB(200, 200, 200),
+        Text = Color3.fromRGB(0, 0, 0)
+    },
+    ["Red"] = {
+        Background = Color3.fromRGB(50, 0, 0),
+        Navbar = Color3.fromRGB(40, 0, 0),
+        Button = Color3.fromRGB(100, 0, 0),
+        Text = Color3.fromRGB(255, 100, 100)
+    }
+}
 
 -- Create the main screen GUI
 local ScreenGui = Instance.new("ScreenGui")
@@ -14,45 +35,87 @@ ScreenGui.Name = "BestHubUI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = CoreGui
 
--- Core window
-local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 750, 0, 450)
-MainFrame.Position = UDim2.new(0.5, -375, 0.5, -225)
-MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-MainFrame.BorderSizePixel = 0
-MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-MainFrame.Parent = ScreenGui
+-- Loading screen
+local LoadingFrame = Instance.new("Frame")
+LoadingFrame.Size = UDim2.new(0, 400, 0, 200)
+LoadingFrame.Position = UDim2.new(0.5, -200, 0.5, -100)
+LoadingFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+LoadingFrame.BorderSizePixel = 0
+LoadingFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+LoadingFrame.Parent = ScreenGui
 
--- Navbar (bottom)
-local Navbar = Instance.new("Frame")
-Navbar.Size = UDim2.new(1, 0, 0, 40)
-Navbar.Position = UDim2.new(0, 0, 1, -40)
-Navbar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-Navbar.BorderSizePixel = 0
-Navbar.Parent = MainFrame
+local LoadingTitle = Instance.new("TextLabel")
+LoadingTitle.Size = UDim2.new(1, 0, 0.4, 0)
+LoadingTitle.Position = UDim2.new(0, 0, 0, 0)
+LoadingTitle.Text = "Loading..."
+LoadingTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+LoadingTitle.Font = Enum.Font.GothamBold
+LoadingTitle.TextSize = 24
+LoadingTitle.BackgroundTransparency = 1
+LoadingTitle.Parent = LoadingFrame
 
--- Sample tab buttons (Icons/Labels can be added)
-local function CreateNavButton(name)
+local LoadingSubtitle = Instance.new("TextLabel")
+LoadingSubtitle.Size = UDim2.new(1, 0, 0.4, 0)
+LoadingSubtitle.Position = UDim2.new(0, 0, 0.4, 0)
+LoadingSubtitle.Text = "Please wait"
+LoadingSubtitle.TextColor3 = Color3.fromRGB(200, 200, 200)
+LoadingSubtitle.Font = Enum.Font.Gotham
+LoadingSubtitle.TextSize = 18
+LoadingSubtitle.BackgroundTransparency = 1
+LoadingSubtitle.Parent = LoadingFrame
+
+local function CreateNavButton(name, theme)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(0, 100, 1, 0)
     btn.Text = name
-    btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.BackgroundColor3 = theme.Button
+    btn.TextColor3 = theme.Text
     btn.Font = Enum.Font.Gotham
     btn.TextSize = 14
     btn.BorderSizePixel = 0
-    btn.Parent = Navbar
     return btn
 end
 
--- Tab simulation
 local Tabs = {}
 function BestHub:CreateWindow(settings)
+    LoadingTitle.Text = settings.LoadingTitle or "BestHub UI"
+    LoadingSubtitle.Text = settings.LoadingSubtitle or "Initializing..."
+
+    task.wait(2) -- simulate load
+    LoadingFrame:Destroy()
+
     local self = setmetatable({}, BestHub)
 
-    self.Name = settings.Name or "Photon UI"
-    self.Tabs = {}
+    local theme = Themes[settings.Theme or "Default"] or Themes["Default"]
+
+    local MainFrame = Instance.new("Frame")
+    MainFrame.Name = "MainFrame"
+    MainFrame.Size = UDim2.new(0, 750, 0, 450)
+    MainFrame.Position = UDim2.new(0.5, -375, 0.5, -225)
+    MainFrame.BackgroundColor3 = theme.Background
+    MainFrame.BorderSizePixel = 0
+    MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    MainFrame.Parent = ScreenGui
+
+    local Header = Instance.new("TextLabel")
+    Header.Size = UDim2.new(1, 0, 0, 40)
+    Header.Position = UDim2.new(0, 0, 0, 0)
+    Header.BackgroundColor3 = theme.Navbar
+    Header.Text = (settings.Icon and ("<" .. settings.Icon .. "> ") or "") .. (settings.Name or "BestHub")
+    Header.TextColor3 = theme.Text
+    Header.TextSize = 18
+    Header.Font = Enum.Font.GothamBold
+    Header.TextXAlignment = Enum.TextXAlignment.Left
+    Header.TextScaled = false
+    Header.BorderSizePixel = 0
+    Header.Parent = MainFrame
+
+    local Navbar = Instance.new("Frame")
+    Navbar.Size = UDim2.new(1, 0, 0, 40)
+    Navbar.Position = UDim2.new(0, 0, 1, -40)
+    Navbar.BackgroundColor3 = theme.Navbar
+    Navbar.BorderSizePixel = 0
+    Navbar.Parent = MainFrame
 
     function self:CreateTab(tabSettings)
         local tab = {
@@ -60,24 +123,23 @@ function BestHub:CreateWindow(settings)
             Elements = {}
         }
 
-        local tabButton = CreateNavButton(tab.Name)
+        local tabButton = CreateNavButton(tab.Name, theme)
+        tabButton.Parent = Navbar
         Tabs[tab.Name] = tabButton
 
         function tab:AddToggle(toggleSettings)
             local toggle = {
                 Type = "Toggle",
-                Name = toggleSettings.Name or "New Toggle",
-                Default = toggleSettings.Default or false,
-                Callback = toggleSettings.Callback or function() end
+                Name = toggleSettings.Name,
+                Default = toggleSettings.Default,
+                Callback = toggleSettings.Callback
             }
-
             toggle.Value = toggle.Default
 
             function toggle:Set(value)
                 toggle.Value = value
                 toggle.Callback(value)
             end
-
             table.insert(tab.Elements, toggle)
             return toggle
         end
@@ -85,22 +147,19 @@ function BestHub:CreateWindow(settings)
         function tab:AddSlider(sliderSettings)
             local slider = {
                 Type = "Slider",
-                Name = sliderSettings.Name or "New Slider",
-                Min = sliderSettings.Min or 0,
-                Max = sliderSettings.Max or 100,
-                Default = sliderSettings.Default or 50,
-                Callback = sliderSettings.Callback or function() end
+                Name = sliderSettings.Name,
+                Min = sliderSettings.Min,
+                Max = sliderSettings.Max,
+                Default = sliderSettings.Default,
+                Callback = sliderSettings.Callback
             }
-
             slider.Value = slider.Default
-
             function slider:Set(value)
                 if value >= slider.Min and value <= slider.Max then
                     slider.Value = value
                     slider.Callback(value)
                 end
             end
-
             table.insert(tab.Elements, slider)
             return slider
         end
@@ -108,14 +167,12 @@ function BestHub:CreateWindow(settings)
         function tab:AddButton(buttonSettings)
             local button = {
                 Type = "Button",
-                Name = buttonSettings.Name or "New Button",
-                Callback = buttonSettings.Callback or function() end
+                Name = buttonSettings.Name,
+                Callback = buttonSettings.Callback
             }
-
             function button:Press()
                 button.Callback()
             end
-
             table.insert(tab.Elements, button)
             return button
         end
@@ -123,9 +180,8 @@ function BestHub:CreateWindow(settings)
         function tab:AddSection(sectionName)
             local section = {
                 Type = "Section",
-                Name = sectionName or "Section"
+                Name = sectionName
             }
-
             table.insert(tab.Elements, section)
             return section
         end
