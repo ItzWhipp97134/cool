@@ -81,7 +81,7 @@ UserInputService.InputEnded:Connect(function(input, processed)
 end)
 
 -- Example usage for Wallhop Macro toggle
-function Photon:SetupWallhopTab(window)
+function Photon.SetupWallhopTab(window)
     local MacrosTab = window:CreateTab("Macros")
     local WallhopSection = MacrosTab:CreateSection("Wallhop")
     WallhopSection:CreateToggle({
