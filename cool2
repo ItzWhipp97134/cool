@@ -4,55 +4,268 @@ Photon.__index = Photon
 local Window = {}
 Window.__index = Window
 
+local Tab = {}
+Tab.__index = Tab
+
+local Section = {}
+Section.__index = Section
+
+-- Create the main window with sidebar, top bar, columns, and bottom bar
 function Photon:CreateWindow(options)
     local self = setmetatable({}, Window)
 
     -- Create ScreenGui
     local gui = Instance.new("ScreenGui")
     gui.Name = options.Name or "PhotonUI"
-    gui.Parent = game:GetService("CoreGui")
+    gui.Parent = game.CoreGui
     gui.ResetOnSpawn = false
 
     -- Main window frame
-    local main = Instance.new("Frame")
-    main.Size = UDim2.new(0, 400, 0, 300)
-    main.Position = UDim2.new(0.5, -200, 0.5, -150)
-    main.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+    local main = Instance.new("Frame", gui)
+    main.Size = UDim2.new(0, 900, 0, 500)
+    main.Position = UDim2.new(0.5, -450, 0.5, -250)
+    main.BackgroundColor3 = Color3.fromRGB(28, 28, 34)
     main.BorderSizePixel = 0
     main.Active = true
     main.Draggable = true
-    main.Parent = gui
+    main.ZIndex = 2
+    local mainCorner = Instance.new("UICorner", main)
+    mainCorner.CornerRadius = UDim.new(0, 12)
+    local shadow = Instance.new("ImageLabel", main)
+    shadow.Image = "rbxassetid://1316045217"
+    shadow.BackgroundTransparency = 1
+    shadow.Size = UDim2.new(1, 60, 1, 60)
+    shadow.Position = UDim2.new(0, -30, 0, -30)
+    shadow.ImageTransparency = 0.7
+    shadow.ZIndex = 0
 
-    -- Title bar
-    local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, 0, 0, 40)
-    title.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-    title.Text = options.Name or "Photon Window"
+    -- Top Bar
+    local topBar = Instance.new("Frame", main)
+    topBar.Size = UDim2.new(1, 0, 0, 44)
+    topBar.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+    topBar.BorderSizePixel = 0
+    topBar.ZIndex = 3
+    local topBarCorner = Instance.new("UICorner", topBar)
+    topBarCorner.CornerRadius = UDim.new(0, 12)
+    local title = Instance.new("TextLabel", topBar)
+    title.Size = UDim2.new(1, 0, 1, 0)
+    title.BackgroundTransparency = 1
+    title.Text = options.Name or "photon"
     title.Font = Enum.Font.GothamBold
-    title.TextSize = 20
-    title.TextColor3 = Color3.fromRGB(220, 220, 230)
-    title.Parent = main
+    title.TextSize = 22
+    title.TextColor3 = Color3.fromRGB(230, 230, 240)
+    title.TextXAlignment = Enum.TextXAlignment.Left
+    title.Position = UDim2.new(0, 16, 0, 0)
+    title.ZIndex = 4
 
     -- Close button
-    local close = Instance.new("TextButton")
+    local close = Instance.new("TextButton", topBar)
     close.Size = UDim2.new(0, 40, 0, 40)
-    close.Position = UDim2.new(1, -40, 0, 0)
-    close.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+    close.Position = UDim2.new(1, -48, 0, 2)
+    close.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
     close.Text = "✕"
     close.Font = Enum.Font.GothamBold
     close.TextSize = 18
     close.TextColor3 = Color3.fromRGB(220, 100, 100)
-    close.Parent = main
+    close.ZIndex = 5
+    local closeCorner = Instance.new("UICorner", close)
+    closeCorner.CornerRadius = UDim.new(1, 0)
     close.MouseButton1Click:Connect(function()
         gui:Destroy()
     end)
 
-    -- Store references for future expansion
+    -- Sidebar (for tabs)
+    local sidebar = Instance.new("Frame", main)
+    sidebar.Size = UDim2.new(0, 140, 1, -44-48)
+    sidebar.Position = UDim2.new(0, 0, 0, 44)
+    sidebar.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
+    sidebar.BorderSizePixel = 0
+    sidebar.ZIndex = 4
+    local sidebarCorner = Instance.new("UICorner", sidebar)
+    sidebarCorner.CornerRadius = UDim.new(0, 10)
+    local sidebarLayout = Instance.new("UIListLayout", sidebar)
+    sidebarLayout.FillDirection = Enum.FillDirection.Vertical
+    sidebarLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+    sidebarLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    sidebarLayout.Padding = UDim.new(0, 4)
+
+    -- Main Content Area (multi-column)
+    local content = Instance.new("Frame", main)
+    content.Size = UDim2.new(1, -140, 1, -44-48)
+    content.Position = UDim2.new(0, 140, 0, 44)
+    content.BackgroundTransparency = 1
+    content.ZIndex = 5
+
+    -- Bottom Bar (for icon tabs)
+    local bottomBar = Instance.new("Frame", main)
+    bottomBar.Size = UDim2.new(1, 0, 0, 48)
+    bottomBar.Position = UDim2.new(0, 0, 1, -48)
+    bottomBar.BackgroundColor3 = Color3.fromRGB(32, 32, 40)
+    bottomBar.BorderSizePixel = 0
+    bottomBar.ZIndex = 20
+    local bottomBarCorner = Instance.new("UICorner", bottomBar)
+    bottomBarCorner.CornerRadius = UDim.new(0, 12)
+    local bottomLayout = Instance.new("UIListLayout", bottomBar)
+    bottomLayout.FillDirection = Enum.FillDirection.Horizontal
+    bottomLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    bottomLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    bottomLayout.Padding = UDim.new(0, 16)
+
+    -- Store references
     self.Gui = gui
     self.Main = main
-    self.Title = title
+    self.Sidebar = sidebar
+    self.Content = content
+    self.BottomBar = bottomBar
+    self.Tabs = {}
+    self.CurrentTab = nil
 
     return self
 end
 
-return setmetatable({}, Photon)
+-- Add a tab to the sidebar
+function Window:CreateTab(name)
+    local selfWindow = self
+    local tab = setmetatable({}, Tab)
+    tab.Name = name
+    tab.Sections = {}
+    tab.Columns = {}
+
+    -- Sidebar button
+    local btn = Instance.new("TextButton", self.Sidebar)
+    btn.Size = UDim2.new(1, -8, 0, 36)
+    btn.BackgroundColor3 = (#self.Tabs == 0) and Color3.fromRGB(60, 120, 200) or Color3.fromRGB(38, 38, 48)
+    btn.Text = name
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 16
+    btn.TextColor3 = (#self.Tabs == 0) and Color3.fromRGB(255,255,255) or Color3.fromRGB(180, 180, 200)
+    btn.ZIndex = 5
+    local btnCorner = Instance.new("UICorner", btn)
+    btnCorner.CornerRadius = UDim.new(0, 8)
+    tab.Button = btn
+
+    -- Tab content frame (multi-column)
+    local tabContent = Instance.new("Frame", self.Content)
+    tabContent.Size = UDim2.new(1, 0, 1, 0)
+    tabContent.Position = UDim2.new(0, 0, 0, 0)
+    tabContent.BackgroundTransparency = 1
+    tabContent.Visible = (#self.Tabs == 0)
+    tabContent.ZIndex = 6
+    tab.ContentFrame = tabContent
+
+    -- Tab switching logic
+    btn.MouseButton1Click:Connect(function()
+        for _, t in ipairs(self.Tabs) do
+            t.Button.BackgroundColor3 = Color3.fromRGB(38, 38, 48)
+            t.Button.TextColor3 = Color3.fromRGB(180, 180, 200)
+            t.ContentFrame.Visible = false
+        end
+        btn.BackgroundColor3 = Color3.fromRGB(60, 120, 200)
+        btn.TextColor3 = Color3.fromRGB(255,255,255)
+        tabContent.Visible = true
+        self.CurrentTab = tab
+    end)
+
+    table.insert(self.Tabs, tab)
+    if #self.Tabs == 1 then
+        self.CurrentTab = tab
+    end
+    return tab
+end
+
+-- Add a section (column) to the current tab
+function Tab:CreateSection(name)
+    local section = setmetatable({}, Section)
+    section.Name = name
+    section.Controls = {}
+
+    -- Each section is a column
+    local col = Instance.new("Frame", self.ContentFrame)
+    local colCount = #self.Columns
+    col.Size = UDim2.new(0, 200, 1, 0)
+    col.Position = UDim2.new(0, colCount * 210, 0, 0)
+    col.BackgroundColor3 = Color3.fromRGB(38, 38, 48)
+    col.BorderSizePixel = 0
+    col.ZIndex = 7
+    local colCorner = Instance.new("UICorner", col)
+    colCorner.CornerRadius = UDim.new(0, 8)
+    local colStroke = Instance.new("UIStroke", col)
+    colStroke.Color = Color3.fromRGB(60, 60, 80)
+    colStroke.Thickness = 1
+
+    -- Section Header
+    local header = Instance.new("TextLabel", col)
+    header.Size = UDim2.new(1, 0, 0, 28)
+    header.Position = UDim2.new(0, 0, 0, 0)
+    header.BackgroundTransparency = 1
+    header.Text = name
+    header.Font = Enum.Font.GothamBold
+    header.TextSize = 16
+    header.TextColor3 = Color3.fromRGB(220, 220, 230)
+    header.TextXAlignment = Enum.TextXAlignment.Left
+    header.ZIndex = 8
+
+    -- Layout for controls
+    local controlLayout = Instance.new("UIListLayout", col)
+    controlLayout.FillDirection = Enum.FillDirection.Vertical
+    controlLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+    controlLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    controlLayout.Padding = UDim.new(0, 8)
+    controlLayout.Parent = col
+
+    section.Frame = col
+    section.Label = header
+    section.Controls = {}
+    table.insert(self.Columns, col)
+    table.insert(self.Sections, section)
+    return section
+end
+
+-- Add a toggle to a section (column)
+function Section:CreateToggle(options)
+    local toggleFrame = Instance.new("Frame", self.Frame)
+    toggleFrame.Size = UDim2.new(1, -16, 0, 32)
+    toggleFrame.BackgroundTransparency = 1
+    toggleFrame.ZIndex = 9
+
+    local label = Instance.new("TextLabel", toggleFrame)
+    label.Size = UDim2.new(0.7, 0, 1, 0)
+    label.Position = UDim2.new(0, 0, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = options.Name or "Toggle"
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 15
+    label.TextColor3 = Color3.fromRGB(220, 220, 230)
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.ZIndex = 10
+
+    local button = Instance.new("TextButton", toggleFrame)
+    button.Size = UDim2.new(0, 44, 0, 24)
+    button.Position = UDim2.new(1, -54, 0.5, -12)
+    button.BackgroundColor3 = options.CurrentValue and Color3.fromRGB(60, 180, 120) or Color3.fromRGB(60, 60, 80)
+    button.Text = ""
+    button.AutoButtonColor = false
+    button.ZIndex = 11
+    local buttonCorner = Instance.new("UICorner", button)
+    buttonCorner.CornerRadius = UDim.new(1, 0)
+
+    local circle = Instance.new("Frame", button)
+    circle.Size = UDim2.new(0, 16, 0, 16)
+    circle.Position = options.CurrentValue and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+    circle.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+    circle.ZIndex = 12
+    local uicorner = Instance.new("UICorner", circle)
+    uicorner.CornerRadius = UDim.new(1, 0)
+
+    local state = options.CurrentValue or false
+    button.MouseButton1Click:Connect(function()
+        state = not state
+        button.BackgroundColor3 = state and Color3.fromRGB(60, 180, 120) or Color3.fromRGB(60, 60, 80)
+        circle.Position = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+        if options.Callback then
+            options.Callback(state)
+        end
+    end)
+end
+
+return setmetatable({}, Photon) 
