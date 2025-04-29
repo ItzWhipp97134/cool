@@ -83,12 +83,45 @@ UserInputService.InputEnded:Connect(function(input, processed)
     end
 end)
 
--- photon.lua: Rayfield-inspired, modern, beautiful, customizable UI library
--- Sidebar icons (Lucide or Roblox asset id), multiple themes, Rayfield-style API
+-- PHOTON UI: Rayfield-Style UI Library (Full Rayfield Clone)
+-- Features: Rayfield layout, sidebar, topbar, minimize/close, custom loading spinner, Settings tab, all controls, smooth transitions, Rayfield themes, no watermark
+-- API: Rayfield-style (all creation functions use options tables)
 
 -- Prevent duplicate windows
 if _G.PhotonWindow then _G.PhotonWindow:Destroy() end
 _G.PhotonWindow = nil
+
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+-- Rayfield themes
+local themes = {
+    Default = {
+        Main = Color3.fromRGB(24, 24, 28),
+        TopBar = Color3.fromRGB(30, 30, 36),
+        Sidebar = Color3.fromRGB(20, 20, 24),
+        Section = Color3.fromRGB(32, 32, 38),
+        Accent = Color3.fromRGB(60, 120, 200),
+        Text = Color3.fromRGB(220, 220, 230),
+        SectionHeader = Color3.fromRGB(180, 180, 200),
+        ControlBG = Color3.fromRGB(38, 38, 48),
+        ControlStroke = Color3.fromRGB(60, 120, 200),
+        ControlHighlight = Color3.fromRGB(80, 160, 255)
+    },
+    Light = {
+        Main = Color3.fromRGB(230, 230, 240),
+        TopBar = Color3.fromRGB(210, 210, 220),
+        Sidebar = Color3.fromRGB(200, 200, 210),
+        Section = Color3.fromRGB(220, 220, 230),
+        Accent = Color3.fromRGB(60, 120, 200),
+        Text = Color3.fromRGB(40, 40, 50),
+        SectionHeader = Color3.fromRGB(80, 80, 100),
+        ControlBG = Color3.fromRGB(240, 240, 250),
+        ControlStroke = Color3.fromRGB(60, 120, 200),
+        ControlHighlight = Color3.fromRGB(80, 160, 255)
+    }
+}
 
 -- Lucide icon mapping (add more as needed)
 local lucideIcons = {
@@ -103,64 +136,10 @@ local lucideIcons = {
     ["star"] = "rbxassetid://7733964649",
     ["heart"] = "rbxassetid://7733964650"
 }
-
--- THEMES
-local themes = {
-    Dark = {
-        Main = Color3.fromRGB(28, 28, 34),
-        TopBar = Color3.fromRGB(35, 35, 40),
-        Sidebar = Color3.fromRGB(24, 24, 28),
-        Section = Color3.fromRGB(38, 38, 48),
-        Accent = Color3.fromRGB(60, 120, 200),
-        Text = Color3.fromRGB(220, 220, 230)
-    },
-    Light = {
-        Main = Color3.fromRGB(230, 230, 240),
-        TopBar = Color3.fromRGB(210, 210, 220),
-        Sidebar = Color3.fromRGB(200, 200, 210),
-        Section = Color3.fromRGB(220, 220, 230),
-        Accent = Color3.fromRGB(60, 120, 200),
-        Text = Color3.fromRGB(40, 40, 50)
-    },
-    Red = {
-        Main = Color3.fromRGB(34, 28, 28),
-        TopBar = Color3.fromRGB(60, 30, 30),
-        Sidebar = Color3.fromRGB(40, 20, 20),
-        Section = Color3.fromRGB(60, 40, 40),
-        Accent = Color3.fromRGB(200, 60, 60),
-        Text = Color3.fromRGB(255, 220, 220)
-    },
-    Blue = {
-        Main = Color3.fromRGB(28, 34, 40),
-        TopBar = Color3.fromRGB(35, 40, 60),
-        Sidebar = Color3.fromRGB(24, 28, 40),
-        Section = Color3.fromRGB(38, 48, 60),
-        Accent = Color3.fromRGB(60, 120, 200),
-        Text = Color3.fromRGB(220, 230, 255)
-    },
-    Green = {
-        Main = Color3.fromRGB(28, 34, 28),
-        TopBar = Color3.fromRGB(35, 60, 35),
-        Sidebar = Color3.fromRGB(24, 40, 24),
-        Section = Color3.fromRGB(38, 60, 38),
-        Accent = Color3.fromRGB(60, 200, 120),
-        Text = Color3.fromRGB(220, 255, 220)
-    },
-    Purple = {
-        Main = Color3.fromRGB(34, 28, 40),
-        TopBar = Color3.fromRGB(60, 35, 60),
-        Sidebar = Color3.fromRGB(40, 24, 40),
-        Section = Color3.fromRGB(60, 38, 60),
-        Accent = Color3.fromRGB(160, 60, 200),
-        Text = Color3.fromRGB(240, 220, 255)
-    }
-}
-
--- Get icon asset (either Lucide name or Roblox asset id)
 local function getIconAsset(icon)
     if not icon or icon == 0 then return nil end
     if type(icon) == "string" then
-        return lucideIcons[icon] or lucideIcons["box"] -- fallback to box icon
+        return lucideIcons[icon] or lucideIcons["box"]
     end
     return "rbxassetid://" .. tostring(icon)
 end
@@ -174,102 +153,143 @@ Tab.__index = Tab
 local Section = {}
 Section.__index = Section
 
+-- Custom loading spinner
+local function showLoadingScreen(gui, theme, title, subtitle)
+    local loadingFrame = Instance.new("Frame", gui)
+    loadingFrame.Size = UDim2.new(1, 0, 1, 0)
+    loadingFrame.BackgroundColor3 = theme.Main
+    loadingFrame.ZIndex = 100
+    loadingFrame.Name = "PhotonLoading"
+    local spinner = Instance.new("ImageLabel", loadingFrame)
+    spinner.Size = UDim2.new(0, 64, 0, 64)
+    spinner.Position = UDim2.new(0.5, -32, 0.5, -80)
+    spinner.BackgroundTransparency = 1
+    spinner.Image = "rbxassetid://7734068321" -- Custom spinner asset (replace with your own if desired)
+    spinner.ZIndex = 101
+    local loadingTitle = Instance.new("TextLabel", loadingFrame)
+    loadingTitle.Size = UDim2.new(1, 0, 0, 40)
+    loadingTitle.Position = UDim2.new(0, 0, 0.5, 0)
+    loadingTitle.BackgroundTransparency = 1
+    loadingTitle.Text = title or "Photon UI"
+    loadingTitle.Font = Enum.Font.GothamBold
+    loadingTitle.TextSize = 28
+    loadingTitle.TextColor3 = theme.Accent
+    loadingTitle.TextXAlignment = Enum.TextXAlignment.Center
+    loadingTitle.TextYAlignment = Enum.TextYAlignment.Center
+    loadingTitle.ZIndex = 101
+    local loadingSubtitle = Instance.new("TextLabel", loadingFrame)
+    loadingSubtitle.Size = UDim2.new(1, 0, 0, 28)
+    loadingSubtitle.Position = UDim2.new(0, 0, 0.5, 40)
+    loadingSubtitle.BackgroundTransparency = 1
+    loadingSubtitle.Text = subtitle or "Loading..."
+    loadingSubtitle.Font = Enum.Font.Gotham
+    loadingSubtitle.TextSize = 18
+    loadingSubtitle.TextColor3 = theme.Accent
+    loadingSubtitle.TextXAlignment = Enum.TextXAlignment.Center
+    loadingSubtitle.TextYAlignment = Enum.TextYAlignment.Center
+    loadingSubtitle.ZIndex = 101
+    -- Animate spinner
+    local angle = 0
+    local running = true
+    spawn(function()
+        while running and spinner.Parent do
+            angle = (angle + 6) % 360
+            spinner.Rotation = angle
+            wait(0.016)
+        end
+    end)
+    wait(1.2)
+    running = false
+    loadingFrame:Destroy()
+end
+
 function Photon:CreateWindow(options)
     if _G.PhotonWindow then _G.PhotonWindow:Destroy() end
     local self = setmetatable({}, Window)
-    local theme = themes[options.Theme] or themes.Dark
+    local theme = themes[options.Theme] or themes.Default
     self.Theme = theme
-    self.Name = options.Name or "PhotonUI"
-    self.Icon = options.Icon or 0
+    self.Name = options.Name or "Photon UI"
+    self.Icon = options.Icon or "layout-dashboard"
     self.LoadingTitle = options.LoadingTitle
     self.LoadingSubtitle = options.LoadingSubtitle
+    self.Tabs = {}
+    self.CurrentTab = nil
+    self.TabButtons = {}
+    self.Minimized = false
 
     -- Create ScreenGui
     local gui = Instance.new("ScreenGui")
     gui.Name = self.Name
     gui.Parent = game.CoreGui
     gui.ResetOnSpawn = false
+    _G.PhotonWindow = gui
 
-    -- Optional loading screen
-    if self.LoadingTitle or self.LoadingSubtitle then
-        local loadingFrame = Instance.new("Frame", gui)
-        loadingFrame.Size = UDim2.new(1, 0, 1, 0)
-        loadingFrame.BackgroundColor3 = theme.Main
-        loadingFrame.ZIndex = 100
-        local loadingTitle = Instance.new("TextLabel", loadingFrame)
-        loadingTitle.Size = UDim2.new(1, 0, 0, 60)
-        loadingTitle.Position = UDim2.new(0, 0, 0.5, -60)
-        loadingTitle.BackgroundTransparency = 1
-        loadingTitle.Text = self.LoadingTitle or ""
-        loadingTitle.Font = Enum.Font.GothamBold
-        loadingTitle.TextSize = 32
-        loadingTitle.TextColor3 = theme.Accent
-        loadingTitle.TextXAlignment = Enum.TextXAlignment.Center
-        loadingTitle.TextYAlignment = Enum.TextYAlignment.Center
-        local loadingSubtitle = Instance.new("TextLabel", loadingFrame)
-        loadingSubtitle.Size = UDim2.new(1, 0, 0, 40)
-        loadingSubtitle.Position = UDim2.new(0, 0, 0.5, 10)
-        loadingSubtitle.BackgroundTransparency = 1
-        loadingSubtitle.Text = self.LoadingSubtitle or ""
-        loadingSubtitle.Font = Enum.Font.Gotham
-        loadingSubtitle.TextSize = 22
-        loadingSubtitle.TextColor3 = theme.Accent
-        loadingSubtitle.TextXAlignment = Enum.TextXAlignment.Center
-        loadingSubtitle.TextYAlignment = Enum.TextYAlignment.Center
-        wait(1)
-        loadingFrame:Destroy()
-    end
+    -- Loading screen
+    showLoadingScreen(gui, theme, self.LoadingTitle, self.LoadingSubtitle)
 
     -- Main window frame
     local main = Instance.new("Frame", gui)
-    main.Size = UDim2.new(0, 900, 0, 540)
-    main.Position = UDim2.new(0.5, -450, 0.5, -270)
+    main.Size = UDim2.new(0, 600, 0, 400)
+    main.Position = UDim2.new(0.5, -300, 0.5, -200)
     main.BackgroundColor3 = theme.Main
     main.BorderSizePixel = 0
     main.Active = true
     main.Draggable = true
     main.ZIndex = 2
+    main.Name = "PhotonMain"
     local mainCorner = Instance.new("UICorner", main)
-    mainCorner.CornerRadius = UDim.new(0, 14)
+    mainCorner.CornerRadius = UDim.new(0, 12)
     local shadow = Instance.new("ImageLabel", main)
     shadow.Image = "rbxassetid://1316045217"
     shadow.BackgroundTransparency = 1
-    shadow.Size = UDim2.new(1, 60, 1, 60)
-    shadow.Position = UDim2.new(0, -30, 0, -30)
-    shadow.ImageTransparency = 0.7
+    shadow.Size = UDim2.new(1, 40, 1, 40)
+    shadow.Position = UDim2.new(0, -20, 0, -20)
+    shadow.ImageTransparency = 0.8
     shadow.ZIndex = 0
 
     -- Top Bar
     local topBar = Instance.new("Frame", main)
-    topBar.Size = UDim2.new(1, 0, 0, 48)
+    topBar.Size = UDim2.new(1, 0, 0, 44)
     topBar.BackgroundColor3 = theme.TopBar
     topBar.BorderSizePixel = 0
     topBar.ZIndex = 3
+    topBar.Name = "PhotonTopBar"
     local topBarCorner = Instance.new("UICorner", topBar)
-    topBarCorner.CornerRadius = UDim.new(0, 14)
+    topBarCorner.CornerRadius = UDim.new(0, 12)
     -- Icon
-    if self.Icon and self.Icon ~= 0 then
-        local icon = Instance.new("ImageLabel", topBar)
-        icon.Size = UDim2.new(0, 32, 0, 32)
-        icon.Position = UDim2.new(0, 12, 0.5, -16)
-        icon.BackgroundTransparency = 1
-        icon.ZIndex = 4
-        icon.Image = getIconAsset(self.Icon)
-    end
+    local icon = Instance.new("ImageLabel", topBar)
+    icon.Size = UDim2.new(0, 28, 0, 28)
+    icon.Position = UDim2.new(0, 12, 0.5, -14)
+    icon.BackgroundTransparency = 1
+    icon.ZIndex = 4
+    icon.Image = getIconAsset(self.Icon)
+    -- Title
     local title = Instance.new("TextLabel", topBar)
     title.Size = UDim2.new(1, 0, 1, 0)
     title.BackgroundTransparency = 1
     title.Text = self.Name
     title.Font = Enum.Font.GothamBold
-    title.TextSize = 22
+    title.TextSize = 20
     title.TextColor3 = theme.Accent
     title.TextXAlignment = Enum.TextXAlignment.Left
-    title.Position = UDim2.new(0, 56, 0, 0)
+    title.Position = UDim2.new(0, 48, 0, 0)
     title.ZIndex = 4
+    -- Minimize button
+    local minimize = Instance.new("TextButton", topBar)
+    minimize.Size = UDim2.new(0, 36, 0, 36)
+    minimize.Position = UDim2.new(1, -84, 0.5, -18)
+    minimize.BackgroundColor3 = theme.Section
+    minimize.Text = "_"
+    minimize.Font = Enum.Font.GothamBold
+    minimize.TextSize = 18
+    minimize.TextColor3 = theme.Accent
+    minimize.ZIndex = 5
+    local minimizeCorner = Instance.new("UICorner", minimize)
+    minimizeCorner.CornerRadius = UDim.new(1, 0)
     -- Close button
     local close = Instance.new("TextButton", topBar)
-    close.Size = UDim2.new(0, 40, 0, 40)
-    close.Position = UDim2.new(1, -48, 0, 4)
+    close.Size = UDim2.new(0, 36, 0, 36)
+    close.Position = UDim2.new(1, -44, 0.5, -18)
     close.BackgroundColor3 = theme.Section
     close.Text = "✕"
     close.Font = Enum.Font.GothamBold
@@ -281,16 +301,21 @@ function Photon:CreateWindow(options)
     close.MouseButton1Click:Connect(function()
         gui:Destroy()
     end)
+    minimize.MouseButton1Click:Connect(function()
+        self.Minimized = not self.Minimized
+        main.Visible = not self.Minimized
+    end)
 
     -- Sidebar
     local sidebar = Instance.new("Frame", main)
-    sidebar.Size = UDim2.new(0, 160, 1, -48)
-    sidebar.Position = UDim2.new(0, 0, 0, 48)
+    sidebar.Size = UDim2.new(0, 140, 1, -44)
+    sidebar.Position = UDim2.new(0, 0, 0, 44)
     sidebar.BackgroundColor3 = theme.Sidebar
     sidebar.BorderSizePixel = 0
     sidebar.ZIndex = 4
+    sidebar.Name = "PhotonSidebar"
     local sidebarCorner = Instance.new("UICorner", sidebar)
-    sidebarCorner.CornerRadius = UDim.new(0, 12)
+    sidebarCorner.CornerRadius = UDim.new(0, 10)
     local sidebarLayout = Instance.new("UIListLayout", sidebar)
     sidebarLayout.FillDirection = Enum.FillDirection.Vertical
     sidebarLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
@@ -299,20 +324,18 @@ function Photon:CreateWindow(options)
 
     -- Main Content Area
     local content = Instance.new("Frame", main)
-    content.Size = UDim2.new(1, -160, 1, -48)
-    content.Position = UDim2.new(0, 160, 0, 48)
+    content.Size = UDim2.new(1, -140, 1, -44)
+    content.Position = UDim2.new(0, 140, 0, 44)
     content.BackgroundTransparency = 1
     content.ZIndex = 5
+    content.Name = "PhotonContent"
 
     -- Store references
     self.Gui = gui
     self.Main = main
     self.Sidebar = sidebar
     self.Content = content
-    self.Tabs = {}
-    self.CurrentTab = nil
     self.Theme = theme
-    _G.PhotonWindow = self.Gui
     return self
 end
 
@@ -333,6 +356,7 @@ function Window:CreateTab(options)
     tabBtn.BackgroundColor3 = self.Theme.Section
     tabBtn.Text = ""
     tabBtn.ZIndex = 5
+    tabBtn.AutoButtonColor = false
     local tabBtnCorner = Instance.new("UICorner", tabBtn)
     tabBtnCorner.CornerRadius = UDim.new(0, 10)
     -- Icon
@@ -394,8 +418,8 @@ function Tab:CreateSection(options)
     -- Each section is a column
     local col = Instance.new("Frame", self.ContentFrame)
     local colCount = #self.Columns
-    col.Size = UDim2.new(0, 240, 1, 0)
-    col.Position = UDim2.new(0, colCount * 250, 0, 0)
+    col.Size = UDim2.new(0, 220, 1, 0)
+    col.Position = UDim2.new(0, colCount * 230, 0, 0)
     col.BackgroundColor3 = self.Theme.Section
     col.BorderSizePixel = 0
     col.ZIndex = 7
@@ -413,7 +437,7 @@ function Tab:CreateSection(options)
     header.Text = name
     header.Font = Enum.Font.GothamBold
     header.TextSize = 16
-    header.TextColor3 = self.Theme.Accent
+    header.TextColor3 = self.Theme.SectionHeader
     header.TextXAlignment = Enum.TextXAlignment.Left
     header.ZIndex = 8
 
@@ -859,11 +883,13 @@ local function createDropdown(parent, options)
     return dropdownFrame
 end
 
--- Example usage for executor (Rayfield-style):
+-- Example usage:
 local Window = Photon:CreateWindow({
-    Name = "Photon Example",
-    Icon = "layout-dashboard", -- Lucide icon name or Roblox asset id
-    Theme = "Purple"
+    Name = "Photon Rayfield Clone",
+    Icon = "layout-dashboard",
+    Theme = "Default",
+    LoadingTitle = "Photon UI",
+    LoadingSubtitle = "Rayfield-Style Menu"
 })
 local Tab = Window:CreateTab({ Name = "Aimbot", Icon = "target" })
 local Section = Tab:CreateSection({ Name = "Main" })
@@ -875,5 +901,9 @@ local ESPSection = VisualsTab:CreateSection({ Name = "ESP" })
 ESPSection:CreateToggle({ Name = "Box ESP", CurrentValue = false, Callback = function(state) print("ESP", state) end })
 ESPSection:CreateColorPicker({ Name = "Box Color", Default = Color3.fromRGB(0,255,0), Callback = function(color) print("Color", color) end })
 ESPSection:CreateSlider({ Name = "Box Thickness", Min = 1, Max = 5, Default = 2, Callback = function(val) print("Thickness", val) end })
+local SettingsTab = Window:CreateTab({ Name = "Settings", Icon = "settings" })
+local UISection = SettingsTab:CreateSection({ Name = "UI" })
+UISection:CreateDropdown({ Name = "Theme", Options = {"Default", "Light"}, Default = "Default", Callback = function(themeName) print("Theme changed to", themeName) end })
+UISection:CreateColorPicker({ Name = "Accent Color", Default = Color3.fromRGB(60,120,200), Callback = function(color) print("Accent Color", color) end })
 
 return setmetatable({}, Photon) 
