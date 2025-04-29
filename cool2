@@ -132,6 +132,12 @@ function Photon:CreateSection(name)
     header.TextSize = 15
     header.TextColor3 = theme.Accent
     header.TextXAlignment = Enum.TextXAlignment.Left
+    -- Add UIListLayout for stacking controls
+    local layout = Instance.new("UIListLayout", sectionFrame)
+    layout.FillDirection = Enum.FillDirection.Vertical
+    layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Padding = UDim.new(0, 8)
     section.Frame = sectionFrame
     section.Label = header
     section.Controls = {}
@@ -143,7 +149,6 @@ end
 function Photon:CreateToggle(options)
     local toggleFrame = Instance.new("Frame", self.Frame or self.ContentFrame or self.Content)
     toggleFrame.Size = UDim2.new(1, -16, 0, 32)
-    toggleFrame.Position = UDim2.new(0, 8, 0, 36 + (#self.Controls or 0) * 38)
     toggleFrame.BackgroundTransparency = 1
     local label = Instance.new("TextLabel", toggleFrame)
     label.Size = UDim2.new(0.7, 0, 1, 0)
@@ -185,7 +190,6 @@ function Photon:CreateSlider(options)
     local value = options.Default or min
     local sliderFrame = Instance.new("Frame", self.Frame or self.ContentFrame or self.Content)
     sliderFrame.Size = UDim2.new(1, -16, 0, 48)
-    sliderFrame.Position = UDim2.new(0, 8, 0, 36 + (#self.Controls or 0) * 54)
     sliderFrame.BackgroundTransparency = 1
     local label = Instance.new("TextLabel", sliderFrame)
     label.Size = UDim2.new(1, 0, 0, 18)
@@ -249,7 +253,6 @@ end
 function Photon:CreateDropdown(options)
     local dropdownFrame = Instance.new("Frame", self.Frame or self.ContentFrame or self.Content)
     dropdownFrame.Size = UDim2.new(1, -16, 0, 36)
-    dropdownFrame.Position = UDim2.new(0, 8, 0, 36 + (#self.Controls or 0) * 40)
     dropdownFrame.BackgroundTransparency = 1
     local label = Instance.new("TextLabel", dropdownFrame)
     label.Size = UDim2.new(0.6, 0, 1, 0)
@@ -301,7 +304,6 @@ end
 function Photon:CreateKeybind(options)
     local keybindFrame = Instance.new("Frame", self.Frame or self.ContentFrame or self.Content)
     keybindFrame.Size = UDim2.new(1, -16, 0, 36)
-    keybindFrame.Position = UDim2.new(0, 8, 0, 36 + (#self.Controls or 0) * 40)
     keybindFrame.BackgroundTransparency = 1
     local label = Instance.new("TextLabel", keybindFrame)
     label.Size = UDim2.new(0.6, 0, 1, 0)
@@ -341,7 +343,6 @@ end
 function Photon:CreateColorPicker(options)
     local colorFrame = Instance.new("Frame", self.Frame or self.ContentFrame or self.Content)
     colorFrame.Size = UDim2.new(1, -16, 0, 36)
-    colorFrame.Position = UDim2.new(0, 8, 0, 36 + (#self.Controls or 0) * 40)
     colorFrame.BackgroundTransparency = 1
     local label = Instance.new("TextLabel", colorFrame)
     label.Size = UDim2.new(0.6, 0, 1, 0)
@@ -398,7 +399,6 @@ end
 function Photon:CreateButton(options)
     local btn = Instance.new("TextButton", self.Frame or self.ContentFrame or self.Content)
     btn.Size = UDim2.new(1, -16, 0, 32)
-    btn.Position = UDim2.new(0, 8, 0, 36 + (#self.Controls or 0) * 38)
     btn.BackgroundColor3 = theme.Accent
     btn.Text = options.Name or "Button"
     btn.Font = Enum.Font.GothamBold
@@ -416,7 +416,6 @@ end
 function Photon:CreateLabel(options)
     local label = Instance.new("TextLabel", self.Frame or self.ContentFrame or self.Content)
     label.Size = UDim2.new(1, -16, 0, 28)
-    label.Position = UDim2.new(0, 8, 0, 36 + (#self.Controls or 0) * 32)
     label.BackgroundTransparency = 1
     label.Text = options.Text or "Label"
     label.Font = Enum.Font.Gotham
