@@ -1,0 +1,110 @@
+local Photon = {}
+Photon.__index = Photon
+
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+-- Rayfield-style themes
+local themes = {
+    Default = {
+        Main = Color3.fromRGB(24, 24, 28),
+        TopBar = Color3.fromRGB(30, 30, 36),
+        Sidebar = Color3.fromRGB(20, 20, 24),
+        Section = Color3.fromRGB(32, 32, 38),
+        Accent = Color3.fromRGB(60, 120, 200),
+        Text = Color3.fromRGB(220, 220, 230)
+    },
+    Light = {
+        Main = Color3.fromRGB(230, 230, 240),
+        TopBar = Color3.fromRGB(210, 210, 220),
+        Sidebar = Color3.fromRGB(200, 200, 210),
+        Section = Color3.fromRGB(220, 220, 230),
+        Accent = Color3.fromRGB(60, 120, 200),
+        Text = Color3.fromRGB(40, 40, 50)
+    }
+}
+
+local currentTheme = themes.Default
+
+-- ... (theme functions and UI code as before) ...
+
+-- Wallhop Macro State
+local wallhopEnabled = false
+local wallhopKey = Enum.KeyCode.Q
+local flickAngle = math.rad(45)
+local flickSpeed = 0.04
+local wallhopActive = false
+local flickState = false
+local originalCFrame = nil
+
+-- Wallhop Macro Logic
+spawn(function()
+    while true do
+        if wallhopEnabled and wallhopActive then
+            -- Jump
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+                LocalPlayer.Character:FindFirstChildOfClass("Humanoid").Jump = true
+            end
+            -- Camera flick
+            if not flickState then
+                Camera.CFrame = originalCFrame * CFrame.Angles(0, flickAngle, 0)
+                flickState = true
+            else
+                Camera.CFrame = originalCFrame
+                flickState = false
+            end
+            task.wait(flickSpeed)
+        else
+            task.wait(0.05)
+        end
+    end
+end)
+
+UserInputService.InputBegan:Connect(function(input, processed)
+    if not processed and wallhopEnabled and input.KeyCode == wallhopKey then
+        wallhopActive = true
+        originalCFrame = Camera.CFrame
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input, processed)
+    if wallhopEnabled and input.KeyCode == wallhopKey then
+        wallhopActive = false
+        flickState = false
+        if originalCFrame then
+            Camera.CFrame = originalCFrame
+        end
+    end
+end)
+
+-- Static function for Wallhop tab
+function Photon.SetupWallhopTab(window)
+    local MacrosTab = window:CreateTab("Macros")
+    local WallhopSection = MacrosTab:CreateSection("Wallhop")
+    WallhopSection:CreateToggle({
+        Name = "Wallhop Macro",
+        CurrentValue = false,
+        Callback = function(state)
+            wallhopEnabled = state
+        end
+    })
+end
+
+--[[
+USAGE EXAMPLE:
+
+local Photon = loadstring(game:HttpGet("RAW_URL_TO/photon.lua"))()
+local Window = Photon:CreateWindow({ Name = "Photon Example", Theme = "Default" })
+
+-- Add your tabs/sections/controls here...
+
+Photon.SetupWallhopTab(Window)
+
+-- Now, in the UI, go to the Macros tab and enable Wallhop Macro.
+-- Hold Q in-game to wallhop (jump + camera flick).
+]]
+
+return setmetatable({}, Photon)
