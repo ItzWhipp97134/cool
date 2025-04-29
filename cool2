@@ -1,50 +1,443 @@
 local Photon = {}
 Photon.__index = Photon
 
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+
+-- Minimal Rayfield-style theme
+local theme = {
+    Main = Color3.fromRGB(24, 24, 28),
+    TopBar = Color3.fromRGB(30, 30, 36),
+    Sidebar = Color3.fromRGB(20, 20, 24),
+    Section = Color3.fromRGB(32, 32, 38),
+    Accent = Color3.fromRGB(60, 120, 200),
+    Text = Color3.fromRGB(220, 220, 230)
+}
+
 function Photon:CreateWindow(options)
-    -- Store options for later use (UI, config, Discord, KeySystem, etc.)
-    local self = setmetatable({}, {__index = {}})
-    self.Options = options
-    -- TODO: Build the actual UI here
+    local self = setmetatable({}, {__index = Photon})
+    -- Create ScreenGui
+    local gui = Instance.new("ScreenGui")
+    gui.Name = options.Name or "PhotonUI"
+    gui.Parent = game.CoreGui
+    gui.ResetOnSpawn = false
+    -- Main window
+    local main = Instance.new("Frame", gui)
+    main.Size = UDim2.new(0, 500, 0, 400)
+    main.Position = UDim2.new(0.5, -250, 0.5, -200)
+    main.BackgroundColor3 = theme.Main
+    main.BorderSizePixel = 0
+    main.Active = true
+    main.Draggable = true
+    local mainCorner = Instance.new("UICorner", main)
+    mainCorner.CornerRadius = UDim.new(0, 12)
+    -- TopBar
+    local topBar = Instance.new("Frame", main)
+    topBar.Size = UDim2.new(1, 0, 0, 44)
+    topBar.BackgroundColor3 = theme.TopBar
+    topBar.BorderSizePixel = 0
+    local topBarCorner = Instance.new("UICorner", topBar)
+    topBarCorner.CornerRadius = UDim.new(0, 12)
+    local title = Instance.new("TextLabel", topBar)
+    title.Size = UDim2.new(1, 0, 1, 0)
+    title.BackgroundTransparency = 1
+    title.Text = options.Name or "Photon UI"
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 20
+    title.TextColor3 = theme.Accent
+    title.TextXAlignment = Enum.TextXAlignment.Left
+    title.Position = UDim2.new(0, 16, 0, 0)
+    -- Sidebar
+    local sidebar = Instance.new("Frame", main)
+    sidebar.Size = UDim2.new(0, 120, 1, -44)
+    sidebar.Position = UDim2.new(0, 0, 0, 44)
+    sidebar.BackgroundColor3 = theme.Sidebar
+    sidebar.BorderSizePixel = 0
+    local sidebarCorner = Instance.new("UICorner", sidebar)
+    sidebarCorner.CornerRadius = UDim.new(0, 10)
+    -- Content
+    local content = Instance.new("Frame", main)
+    content.Size = UDim2.new(1, -120, 1, -44)
+    content.Position = UDim2.new(0, 120, 0, 44)
+    content.BackgroundTransparency = 1
+    -- Store references
+    self.Gui = gui
+    self.Main = main
+    self.Sidebar = sidebar
+    self.Content = content
+    self.Tabs = {}
     return self
 end
 
--- Add stubs for all Rayfield-style methods
-function Photon.CreateTab(self, name, icon)
-    -- TODO: Create a tab in the sidebar
-    return setmetatable({}, {__index = {}})
+function Photon:CreateTab(name, icon)
+    local tab = {}
+    tab.Name = name
+    tab.Sections = {}
+    tab.Parent = self
+    -- Sidebar button
+    local tabBtn = Instance.new("TextButton", self.Sidebar)
+    tabBtn.Size = UDim2.new(1, -12, 0, 40)
+    tabBtn.Position = UDim2.new(0, 6, 0, 6 + #self.Tabs * 46)
+    tabBtn.BackgroundColor3 = theme.Section
+    tabBtn.Text = name
+    tabBtn.Font = Enum.Font.GothamBold
+    tabBtn.TextSize = 16
+    tabBtn.TextColor3 = theme.Text
+    tabBtn.AutoButtonColor = false
+    local tabBtnCorner = Instance.new("UICorner", tabBtn)
+    tabBtnCorner.CornerRadius = UDim.new(0, 8)
+    -- Tab content frame
+    local tabContent = Instance.new("Frame", self.Content)
+    tabContent.Size = UDim2.new(1, 0, 1, 0)
+    tabContent.Position = UDim2.new(0, 0, 0, 0)
+    tabContent.BackgroundTransparency = 1
+    tabContent.Visible = (#self.Tabs == 0)
+    tab.ContentFrame = tabContent
+    tab.Button = tabBtn
+    -- Tab switching
+    tabBtn.MouseButton1Click:Connect(function()
+        for _, t in ipairs(self.Tabs) do
+            t.Button.BackgroundColor3 = theme.Section
+            t.ContentFrame.Visible = false
+        end
+        tabBtn.BackgroundColor3 = theme.Accent
+        tabContent.Visible = true
+    end)
+    table.insert(self.Tabs, tab)
+    if #self.Tabs == 1 then
+        tabBtn.BackgroundColor3 = theme.Accent
+        tabContent.Visible = true
+    end
+    return setmetatable(tab, {__index = Photon})
 end
 
-function Photon.CreateSection(self, name)
-    -- TODO: Create a section in the current tab
-    return setmetatable({}, {__index = {}})
+function Photon:CreateSection(name)
+    local section = {}
+    section.Name = name
+    section.Parent = self
+    -- Section frame
+    local sectionFrame = Instance.new("Frame", self.ContentFrame or self.Content)
+    sectionFrame.Size = UDim2.new(0, 340, 1, 0)
+    sectionFrame.Position = UDim2.new(0, 10 + (#self.Sections or 0) * 350, 0, 0)
+    sectionFrame.BackgroundColor3 = theme.Section
+    sectionFrame.BorderSizePixel = 0
+    local sectionCorner = Instance.new("UICorner", sectionFrame)
+    sectionCorner.CornerRadius = UDim.new(0, 8)
+    local header = Instance.new("TextLabel", sectionFrame)
+    header.Size = UDim2.new(1, 0, 0, 28)
+    header.Position = UDim2.new(0, 0, 0, 0)
+    header.BackgroundTransparency = 1
+    header.Text = name
+    header.Font = Enum.Font.GothamBold
+    header.TextSize = 15
+    header.TextColor3 = theme.Accent
+    header.TextXAlignment = Enum.TextXAlignment.Left
+    section.Frame = sectionFrame
+    section.Label = header
+    section.Controls = {}
+    self.Sections = self.Sections or {}
+    table.insert(self.Sections, section)
+    return setmetatable(section, {__index = Photon})
 end
 
-function Photon.CreateToggle(self, options)
-    -- TODO: Create a toggle control
-    return setmetatable({}, {__index = {}})
+function Photon:CreateToggle(options)
+    local toggleFrame = Instance.new("Frame", self.Frame or self.ContentFrame or self.Content)
+    toggleFrame.Size = UDim2.new(1, -16, 0, 32)
+    toggleFrame.Position = UDim2.new(0, 8, 0, 36 + (#self.Controls or 0) * 38)
+    toggleFrame.BackgroundTransparency = 1
+    local label = Instance.new("TextLabel", toggleFrame)
+    label.Size = UDim2.new(0.7, 0, 1, 0)
+    label.Position = UDim2.new(0, 0, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = options.Name or "Toggle"
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 15
+    label.TextColor3 = theme.Accent
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    local button = Instance.new("TextButton", toggleFrame)
+    button.Size = UDim2.new(0, 44, 0, 24)
+    button.Position = UDim2.new(1, -54, 0.5, -12)
+    button.BackgroundColor3 = options.CurrentValue and theme.Accent or theme.Section
+    button.Text = ""
+    button.AutoButtonColor = false
+    local buttonCorner = Instance.new("UICorner", button)
+    buttonCorner.CornerRadius = UDim.new(1, 0)
+    local circle = Instance.new("Frame", button)
+    circle.Size = UDim2.new(0, 16, 0, 16)
+    circle.Position = options.CurrentValue and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+    circle.BackgroundColor3 = theme.Accent
+    local uicorner = Instance.new("UICorner", circle)
+    uicorner.CornerRadius = UDim.new(1, 0)
+    local state = options.CurrentValue or false
+    button.MouseButton1Click:Connect(function()
+        state = not state
+        button.BackgroundColor3 = state and theme.Accent or theme.Section
+        circle.Position = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+        if options.Callback then options.Callback(state) end
+    end)
+    self.Controls = self.Controls or {}
+    table.insert(self.Controls, toggleFrame)
+    return toggleFrame
 end
 
-function Photon.CreateSlider(self, options)
-    -- TODO: Create a slider control
-    return setmetatable({}, {__index = {}})
+function Photon:CreateSlider(options)
+    local min, max = options.Min or 0, options.Max or 100
+    local value = options.Default or min
+    local sliderFrame = Instance.new("Frame", self.Frame or self.ContentFrame or self.Content)
+    sliderFrame.Size = UDim2.new(1, -16, 0, 48)
+    sliderFrame.Position = UDim2.new(0, 8, 0, 36 + (#self.Controls or 0) * 54)
+    sliderFrame.BackgroundTransparency = 1
+    local label = Instance.new("TextLabel", sliderFrame)
+    label.Size = UDim2.new(1, 0, 0, 18)
+    label.Position = UDim2.new(0, 0, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = options.Name or "Slider"
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 15
+    label.TextColor3 = theme.Accent
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    local valueLabel = Instance.new("TextLabel", sliderFrame)
+    valueLabel.Size = UDim2.new(1, 0, 0, 18)
+    valueLabel.Position = UDim2.new(0, 0, 0, 18)
+    valueLabel.BackgroundTransparency = 1
+    valueLabel.Text = tostring(value)
+    valueLabel.Font = Enum.Font.Gotham
+    valueLabel.TextSize = 15
+    valueLabel.TextColor3 = theme.Accent
+    valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+    local sliderBar = Instance.new("Frame", sliderFrame)
+    sliderBar.Size = UDim2.new(1, 0, 0, 6)
+    sliderBar.Position = UDim2.new(0, 0, 0, 36)
+    sliderBar.BackgroundColor3 = theme.Section
+    local sliderBarCorner = Instance.new("UICorner", sliderBar)
+    sliderBarCorner.CornerRadius = UDim.new(1, 0)
+    local sliderFill = Instance.new("Frame", sliderBar)
+    sliderFill.Size = UDim2.new((value-min)/(max-min), 0, 1, 0)
+    sliderFill.BackgroundColor3 = theme.Accent
+    local sliderFillCorner = Instance.new("UICorner", sliderFill)
+    sliderFillCorner.CornerRadius = UDim.new(1, 0)
+    local dragging = false
+    local function updateSlider(input)
+        local rel = (input.Position.X - sliderBar.AbsolutePosition.X) / sliderBar.AbsoluteSize.X
+        rel = math.clamp(rel, 0, 1)
+        value = math.floor((min + (max-min)*rel)*100)/100
+        sliderFill.Size = UDim2.new(rel, 0, 1, 0)
+        valueLabel.Text = tostring(value)
+        if options.Callback then options.Callback(value) end
+    end
+    sliderBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            updateSlider(input)
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            updateSlider(input)
+        end
+    end)
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+    self.Controls = self.Controls or {}
+    table.insert(self.Controls, sliderFrame)
+    return sliderFrame
 end
 
-function Photon.CreateDropdown(self, options)
-    -- TODO: Create a dropdown control
-    return setmetatable({}, {__index = {}})
+function Photon:CreateDropdown(options)
+    local dropdownFrame = Instance.new("Frame", self.Frame or self.ContentFrame or self.Content)
+    dropdownFrame.Size = UDim2.new(1, -16, 0, 36)
+    dropdownFrame.Position = UDim2.new(0, 8, 0, 36 + (#self.Controls or 0) * 40)
+    dropdownFrame.BackgroundTransparency = 1
+    local label = Instance.new("TextLabel", dropdownFrame)
+    label.Size = UDim2.new(0.6, 0, 1, 0)
+    label.Position = UDim2.new(0, 0, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = options.Name or "Dropdown"
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 15
+    label.TextColor3 = theme.Accent
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    local dropBtn = Instance.new("TextButton", dropdownFrame)
+    dropBtn.Size = UDim2.new(0, 80, 0, 24)
+    dropBtn.Position = UDim2.new(1, -90, 0.5, -12)
+    dropBtn.BackgroundColor3 = theme.Section
+    dropBtn.Text = options.Options and options.Options[1] or "Option"
+    dropBtn.Font = Enum.Font.Gotham
+    dropBtn.TextSize = 14
+    dropBtn.TextColor3 = theme.Accent
+    local open = false
+    local dropdownList
+    dropBtn.MouseButton1Click:Connect(function()
+        if open then if dropdownList then dropdownList:Destroy() end open = false return end
+        open = true
+        dropdownList = Instance.new("Frame", dropdownFrame)
+        dropdownList.Size = UDim2.new(0, 80, 0, #options.Options * 22)
+        dropdownList.Position = UDim2.new(1, -90, 1, 0)
+        dropdownList.BackgroundColor3 = theme.Section
+        for _, opt in ipairs(options.Options) do
+            local optBtn = Instance.new("TextButton", dropdownList)
+            optBtn.Size = UDim2.new(1, 0, 0, 22)
+            optBtn.BackgroundColor3 = theme.Section
+            optBtn.Text = opt
+            optBtn.Font = Enum.Font.Gotham
+            optBtn.TextSize = 14
+            optBtn.TextColor3 = theme.Accent
+            optBtn.MouseButton1Click:Connect(function()
+                dropBtn.Text = opt
+                if options.Callback then options.Callback(opt) end
+                dropdownList:Destroy()
+                open = false
+            end)
+        end
+    end)
+    self.Controls = self.Controls or {}
+    table.insert(self.Controls, dropdownFrame)
+    return dropdownFrame
 end
 
-function Photon.CreateKeybind(self, options)
-    -- TODO: Create a keybind control
-    return setmetatable({}, {__index = {}})
+function Photon:CreateKeybind(options)
+    local keybindFrame = Instance.new("Frame", self.Frame or self.ContentFrame or self.Content)
+    keybindFrame.Size = UDim2.new(1, -16, 0, 36)
+    keybindFrame.Position = UDim2.new(0, 8, 0, 36 + (#self.Controls or 0) * 40)
+    keybindFrame.BackgroundTransparency = 1
+    local label = Instance.new("TextLabel", keybindFrame)
+    label.Size = UDim2.new(0.6, 0, 1, 0)
+    label.Position = UDim2.new(0, 0, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = options.Name or "Keybind"
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 15
+    label.TextColor3 = theme.Accent
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    local keyBtn = Instance.new("TextButton", keybindFrame)
+    keyBtn.Size = UDim2.new(0, 80, 0, 24)
+    keyBtn.Position = UDim2.new(1, -90, 0.5, -12)
+    keyBtn.BackgroundColor3 = theme.Section
+    keyBtn.Text = options.CurrentKeybind or "None"
+    keyBtn.Font = Enum.Font.Gotham
+    keyBtn.TextSize = 14
+    keyBtn.TextColor3 = theme.Accent
+    local waitingForKey = false
+    keyBtn.MouseButton1Click:Connect(function()
+        keyBtn.Text = "..."
+        waitingForKey = true
+    end)
+    UserInputService.InputBegan:Connect(function(input, processed)
+        if waitingForKey and not processed then
+            waitingForKey = false
+            local keyName = input.KeyCode.Name
+            keyBtn.Text = keyName
+            if options.Callback then options.Callback(keyName) end
+        end
+    end)
+    self.Controls = self.Controls or {}
+    table.insert(self.Controls, keybindFrame)
+    return keybindFrame
 end
 
-function Photon.CreateColorPicker(self, options)
-    -- TODO: Create a color picker control
-    return setmetatable({}, {__index = {}})
+function Photon:CreateColorPicker(options)
+    local colorFrame = Instance.new("Frame", self.Frame or self.ContentFrame or self.Content)
+    colorFrame.Size = UDim2.new(1, -16, 0, 36)
+    colorFrame.Position = UDim2.new(0, 8, 0, 36 + (#self.Controls or 0) * 40)
+    colorFrame.BackgroundTransparency = 1
+    local label = Instance.new("TextLabel", colorFrame)
+    label.Size = UDim2.new(0.6, 0, 1, 0)
+    label.Position = UDim2.new(0, 0, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = options.Name or "Color"
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 15
+    label.TextColor3 = theme.Accent
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    local colorBtn = Instance.new("TextButton", colorFrame)
+    colorBtn.Size = UDim2.new(0, 36, 0, 24)
+    colorBtn.Position = UDim2.new(1, -46, 0.5, -12)
+    colorBtn.BackgroundColor3 = options.Color or Color3.fromRGB(255,255,255)
+    colorBtn.Text = ""
+    local open = false
+    local popup
+    colorBtn.MouseButton1Click:Connect(function()
+        if open then if popup then popup:Destroy() end open = false return end
+        open = true
+        popup = Instance.new("Frame", colorFrame)
+        popup.Size = UDim2.new(0, 120, 0, 80)
+        popup.Position = UDim2.new(1, 10, 0, 0)
+        popup.BackgroundColor3 = theme.Section
+        local r = Instance.new("TextBox", popup)
+        r.Size = UDim2.new(0, 36, 0, 24)
+        r.Position = UDim2.new(0, 4, 0, 4)
+        r.Text = tostring(math.floor((colorBtn.BackgroundColor3.R or 1)*255))
+        local g = Instance.new("TextBox", popup)
+        g.Size = UDim2.new(0, 36, 0, 24)
+        g.Position = UDim2.new(0, 44, 0, 4)
+        g.Text = tostring(math.floor((colorBtn.BackgroundColor3.G or 1)*255))
+        local b = Instance.new("TextBox", popup)
+        b.Size = UDim2.new(0, 36, 0, 24)
+        b.Position = UDim2.new(0, 84, 0, 4)
+        b.Text = tostring(math.floor((colorBtn.BackgroundColor3.B or 1)*255))
+        local ok = Instance.new("TextButton", popup)
+        ok.Size = UDim2.new(1, -8, 0, 24)
+        ok.Position = UDim2.new(0, 4, 0, 36)
+        ok.Text = "Set"
+        ok.MouseButton1Click:Connect(function()
+            local color = Color3.fromRGB(tonumber(r.Text) or 255, tonumber(g.Text) or 255, tonumber(b.Text) or 255)
+            colorBtn.BackgroundColor3 = color
+            if options.Callback then options.Callback(color) end
+            popup:Destroy()
+            open = false
+        end)
+    end)
+    self.Controls = self.Controls or {}
+    table.insert(self.Controls, colorFrame)
+    return colorFrame
 end
 
--- ...add more as needed (Button, Label, Paragraph, Input, Notification, etc.)
+function Photon:CreateButton(options)
+    local btn = Instance.new("TextButton", self.Frame or self.ContentFrame or self.Content)
+    btn.Size = UDim2.new(1, -16, 0, 32)
+    btn.Position = UDim2.new(0, 8, 0, 36 + (#self.Controls or 0) * 38)
+    btn.BackgroundColor3 = theme.Accent
+    btn.Text = options.Name or "Button"
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 15
+    btn.TextColor3 = theme.Text
+    btn.AutoButtonColor = true
+    btn.MouseButton1Click:Connect(function()
+        if options.Callback then options.Callback() end
+    end)
+    self.Controls = self.Controls or {}
+    table.insert(self.Controls, btn)
+    return btn
+end
+
+function Photon:CreateLabel(options)
+    local label = Instance.new("TextLabel", self.Frame or self.ContentFrame or self.Content)
+    label.Size = UDim2.new(1, -16, 0, 28)
+    label.Position = UDim2.new(0, 8, 0, 36 + (#self.Controls or 0) * 32)
+    label.BackgroundTransparency = 1
+    label.Text = options.Text or "Label"
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 15
+    label.TextColor3 = theme.Text
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    self.Controls = self.Controls or {}
+    table.insert(self.Controls, label)
+    return label
+end
+
+-- Example usage (shows all controls)
+local Window = Photon:CreateWindow({ Name = "Photon Example" })
+local Tab = Window:CreateTab("Main Tab")
+local Section = Tab:CreateSection("Main Section")
+Section:CreateLabel({ Text = "This is a label!" })
+Section:CreateToggle({ Name = "Test Toggle", CurrentValue = false, Callback = function(val) print("Toggle value:", val) end })
+Section:CreateSlider({ Name = "Test Slider", Min = 0, Max = 100, Default = 50, Callback = function(val) print("Slider value:", val) end })
+Section:CreateDropdown({ Name = "Test Dropdown", Options = {"Option 1", "Option 2", "Option 3"}, Callback = function(opt) print("Dropdown option:", opt) end })
+Section:CreateKeybind({ Name = "Test Keybind", CurrentKeybind = "F", Callback = function(key) print("Keybind:", key) end })
+Section:CreateColorPicker({ Name = "Test Color", Color = Color3.fromRGB(255,255,255), Callback = function(color) print("Color:", color) end })
+Section:CreateButton({ Name = "Test Button", Callback = function() print("Button clicked!") end })
 
 return setmetatable({}, Photon)
