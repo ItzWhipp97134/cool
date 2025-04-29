@@ -1,0 +1,72 @@
+
+-- Photon-Style Custom UI Library (Rayfield Compatible API)
+
+local BestHub = {}
+
+-- Store internal references
+local UIS = game:GetService("UserInputService")
+local TS = game:GetService("TweenService")
+local CoreGui = game:GetService("CoreGui")
+
+-- Create the main screen GUI
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "BestHubUI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = CoreGui
+
+-- Core window
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 750, 0, 450)
+MainFrame.Position = UDim2.new(0.5, -375, 0.5, -225)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+MainFrame.BorderSizePixel = 0
+MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+MainFrame.Parent = ScreenGui
+
+-- Navbar (bottom)
+local Navbar = Instance.new("Frame")
+Navbar.Size = UDim2.new(1, 0, 0, 40)
+Navbar.Position = UDim2.new(0, 0, 1, -40)
+Navbar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+Navbar.BorderSizePixel = 0
+Navbar.Parent = MainFrame
+
+-- Sample tab buttons (Icons/Labels can be added)
+local function CreateNavButton(name)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0, 100, 1, 0)
+    btn.Text = name
+    btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.Gotham
+    btn.TextSize = 14
+    btn.BorderSizePixel = 0
+    btn.Parent = Navbar
+    return btn
+end
+
+-- Tab simulation
+local Tabs = {}
+function BestHub:CreateWindow(options)
+    local self = {}
+
+    function self:CreateTab(tabOptions)
+        local Tab = {}
+        local tabButton = CreateNavButton(tabOptions.Name or "Tab")
+        Tabs[tabOptions.Name] = tabButton
+
+        function Tab:CreateSection(name)
+            local Section = {}
+            -- Placeholder logic
+            print("Created section:", name)
+            return Section
+        end
+
+        return Tab
+    end
+
+    return self
+end
+
+return BestHub
