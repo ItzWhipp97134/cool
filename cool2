@@ -1,0 +1,91 @@
+local Photon = {}
+Photon.__index = Photon
+
+-- Window object
+local Window = {}
+Window.__index = Window
+
+-- Tab object
+local Tab = {}
+Tab.__index = Tab
+
+-- Section object
+local Section = {}
+Section.__index = Section
+
+-- ==== WINDOW CREATION ====
+function Photon:CreateWindow(options)
+    local self = setmetatable({}, Window)
+    -- Create main window UI here
+    self._tabs = {}
+    -- ... (UI code for window) ...
+    return self
+end
+
+-- ==== TAB CREATION ====
+function Window:CreateTab(name, icon)
+    local tab = setmetatable({}, Tab)
+    tab._sections = {}
+    -- ... (UI code for tab) ...
+    table.insert(self._tabs, tab)
+    return tab
+end
+
+-- ==== SECTION CREATION ====
+function Tab:CreateSection(name)
+    local section = setmetatable({}, Section)
+    section._controls = {}
+    -- ... (UI code for section) ...
+    table.insert(self._sections, section)
+    return section
+end
+
+-- ==== TOGGLE CREATION ====
+function Section:CreateToggle(options)
+    -- options.Name, options.CurrentValue, options.Callback
+    -- ... (UI code for toggle) ...
+    -- Example callback usage:
+    -- options.Callback(true/false)
+end
+
+-- ==== SLIDER CREATION ====
+function Section:CreateSlider(options)
+    -- options.Name, options.Range, options.Increment, options.CurrentValue, options.Callback
+    -- ... (UI code for slider) ...
+end
+
+-- ==== DROPDOWN CREATION ====
+function Section:CreateDropdown(options)
+    -- options.Name, options.Options, options.CurrentOption, options.Callback
+    -- ... (UI code for dropdown) ...
+end
+
+-- ==== BUTTON CREATION ====
+function Section:CreateButton(options)
+    -- options.Name, options.Callback
+    -- ... (UI code for button) ...
+end
+
+-- ==== TEXTBOX CREATION ====
+function Section:CreateTextbox(options)
+    -- options.Name, options.PlaceholderText, options.Callback
+    -- ... (UI code for textbox) ...
+end
+
+-- ==== LABEL CREATION ====
+function Section:CreateLabel(text)
+    -- ... (UI code for label) ...
+end
+
+-- ==== PARAGRAPH CREATION ====
+function Section:CreateParagraph(title, content)
+    -- ... (UI code for paragraph/info box) ...
+end
+
+-- ==== NOTIFICATION ====
+function Photon:Notify(options)
+    -- options.Title, options.Content, options.Duration
+    -- ... (UI code for notification) ...
+end
+
+return setmetatable({}, {__index = Photon})
