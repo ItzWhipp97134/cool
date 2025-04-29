@@ -360,45 +360,96 @@ function Photon:CreateColorPicker(options)
     colorBtn.Text = ""
     local open = false
     local popup
-    local presetColors = {
-        Color3.fromRGB(255,255,255), -- White
-        Color3.fromRGB(0,0,0),       -- Black
-        Color3.fromRGB(255,0,0),     -- Red
-        Color3.fromRGB(0,255,0),     -- Green
-        Color3.fromRGB(0,0,255),     -- Blue
-        Color3.fromRGB(255,255,0),   -- Yellow
-        Color3.fromRGB(255,0,255),   -- Magenta
-        Color3.fromRGB(0,255,255),   -- Cyan
-        Color3.fromRGB(128,128,128), -- Gray
-        Color3.fromRGB(255,128,0),   -- Orange
-    }
     colorBtn.MouseButton1Click:Connect(function()
         if open then if popup then popup:Destroy() end open = false return end
         open = true
         popup = Instance.new("Frame", colorFrame)
-        popup.Size = UDim2.new(0, 180, 0, 44)
+        popup.Size = UDim2.new(0, 220, 0, 180)
         popup.Position = UDim2.new(1, 10, 0, 0)
         popup.BackgroundColor3 = theme.Section
         popup.BorderSizePixel = 0
-        local paletteLayout = Instance.new("UIListLayout", popup)
-        paletteLayout.FillDirection = Enum.FillDirection.Horizontal
-        paletteLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
-        paletteLayout.SortOrder = Enum.SortOrder.LayoutOrder
-        paletteLayout.Padding = UDim.new(0, 6)
-        for _, col in ipairs(presetColors) do
-            local swatch = Instance.new("TextButton", popup)
-            swatch.Size = UDim2.new(0, 28, 0, 28)
-            swatch.BackgroundColor3 = col
-            swatch.Text = ""
-            local swatchCorner = Instance.new("UICorner", swatch)
-            swatchCorner.CornerRadius = UDim.new(1, 0)
-            swatch.MouseButton1Click:Connect(function()
-                colorBtn.BackgroundColor3 = col
-                if options.Callback then options.Callback(col) end
-                popup:Destroy()
-                open = false
-            end)
+        popup.ZIndex = 50
+        local popupCorner = Instance.new("UICorner", popup)
+        popupCorner.CornerRadius = UDim.new(0, 8)
+        -- Color wheel
+        local wheel = Instance.new("ImageLabel", popup)
+        wheel.Size = UDim2.new(0, 120, 0, 120)
+        wheel.Position = UDim2.new(0, 10, 0, 10)
+        wheel.BackgroundTransparency = 1
+        wheel.Image = "rbxassetid://4155801252" -- Color wheel asset
+        wheel.ZIndex = 51
+        -- Brightness slider
+        local slider = Instance.new("Frame", popup)
+        slider.Size = UDim2.new(0, 16, 0, 120)
+        slider.Position = UDim2.new(0, 140, 0, 10)
+        slider.BackgroundColor3 = Color3.fromRGB(200,200,200)
+        slider.ZIndex = 51
+        local sliderCorner = Instance.new("UICorner", slider)
+        sliderCorner.CornerRadius = UDim.new(1, 0)
+        local sliderFill = Instance.new("Frame", slider)
+        sliderFill.Size = UDim2.new(1, 0, 0.5, 0)
+        sliderFill.Position = UDim2.new(0, 0, 0.5, 0)
+        sliderFill.BackgroundColor3 = Color3.fromRGB(60, 120, 200)
+        sliderFill.ZIndex = 52
+        local sliderFillCorner = Instance.new("UICorner", sliderFill)
+        sliderFillCorner.CornerRadius = UDim.new(1, 0)
+        -- Preview
+        local preview = Instance.new("Frame", popup)
+        preview.Size = UDim2.new(0, 36, 0, 36)
+        preview.Position = UDim2.new(0, 180, 0, 10)
+        preview.BackgroundColor3 = colorBtn.BackgroundColor3
+        preview.ZIndex = 53
+        local previewCorner = Instance.new("UICorner", preview)
+        previewCorner.CornerRadius = UDim.new(1, 0)
+        -- Ok button
+        local ok = Instance.new("TextButton", popup)
+        ok.Size = UDim2.new(0, 60, 0, 28)
+        ok.Position = UDim2.new(0, 150, 0, 120)
+        ok.Text = "Set"
+        ok.BackgroundColor3 = theme.Accent
+        ok.TextColor3 = theme.Text
+        ok.Font = Enum.Font.GothamBold
+        ok.TextSize = 14
+        ok.ZIndex = 54
+        local okCorner = Instance.new("UICorner", ok)
+        okCorner.CornerRadius = UDim.new(1, 0)
+        -- Color logic
+        local hue, sat, val = 0, 0, 1
+        local function updatePreview()
+            local color = Color3.fromHSV(hue, sat, val)
+            preview.BackgroundColor3 = color
         end
+        wheel.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                local pos = input.Position
+                local relX = (pos.X - wheel.AbsolutePosition.X) / wheel.AbsoluteSize.X
+                local relY = (pos.Y - wheel.AbsolutePosition.Y) / wheel.AbsoluteSize.Y
+                local dx, dy = relX - 0.5, relY - 0.5
+                local dist = math.sqrt(dx*dx + dy*dy)
+                if dist <= 0.5 then
+                    hue = (math.atan2(dy, dx) / (2*math.pi)) % 1
+                    sat = math.clamp(dist * 2, 0, 1)
+                    updatePreview()
+                end
+            end
+        end)
+        slider.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                local pos = input.Position
+                local relY = (pos.Y - slider.AbsolutePosition.Y) / slider.AbsoluteSize.Y
+                val = 1 - math.clamp(relY, 0, 1)
+                sliderFill.Size = UDim2.new(1, 0, val, 0)
+                sliderFill.Position = UDim2.new(0, 0, 1-val, 0)
+                updatePreview()
+            end
+        end)
+        ok.MouseButton1Click:Connect(function()
+            local color = Color3.fromHSV(hue, sat, val)
+            colorBtn.BackgroundColor3 = color
+            if options.Callback then options.Callback(color) end
+            popup:Destroy()
+            open = false
+        end)
     end)
     self.Controls = self.Controls or {}
     table.insert(self.Controls, colorFrame)
@@ -435,20 +486,5 @@ function Photon:CreateLabel(options)
     table.insert(self.Controls, label)
     return label
 end
-
--- Example usage (shows all controls, split between two tabs)
-local Window = Photon:CreateWindow({ Name = "Photon Example" })
-local AimbotTab = Window:CreateTab("Aimbot")
-local AimbotSection = AimbotTab:CreateSection("Main Section")
-AimbotSection:CreateLabel({ Text = "This is a label!" })
-AimbotSection:CreateToggle({ Name = "Test Toggle", CurrentValue = false, Callback = function(val) print("Toggle value:", val) end })
-
-local OtherTab = Window:CreateTab("Other Tab")
-local OtherSection = OtherTab:CreateSection("Other Controls")
-OtherSection:CreateSlider({ Name = "Test Slider", Min = 0, Max = 100, Default = 50, Callback = function(val) print("Slider value:", val) end })
-OtherSection:CreateDropdown({ Name = "Test Dropdown", Options = {"Option 1", "Option 2", "Option 3"}, Callback = function(opt) print("Dropdown option:", opt) end })
-OtherSection:CreateKeybind({ Name = "Test Keybind", CurrentKeybind = "F", Callback = function(key) print("Keybind:", key) end })
-OtherSection:CreateColorPicker({ Name = "Test Color", Color = Color3.fromRGB(255,255,255), Callback = function(color) print("Color:", color) end })
-OtherSection:CreateButton({ Name = "Test Button", Callback = function() print("Button clicked!") end })
 
 return setmetatable({}, Photon)
