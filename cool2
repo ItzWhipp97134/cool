@@ -86,6 +86,24 @@ end)
 -- photon.lua: Rayfield-inspired, modern, beautiful, customizable UI library
 -- Sidebar icons (Lucide or Roblox asset id), multiple themes, Rayfield-style API
 
+-- Prevent duplicate windows
+if _G.PhotonWindow then _G.PhotonWindow:Destroy() end
+_G.PhotonWindow = nil
+
+-- Lucide icon mapping (add more as needed)
+local lucideIcons = {
+    ["layout-dashboard"] = "rbxassetid://7733964641",
+    ["target"] = "rbxassetid://7733964642",
+    ["eye"] = "rbxassetid://7733964643",
+    ["settings"] = "rbxassetid://7733964644",
+    ["user"] = "rbxassetid://7733964645",
+    ["shield"] = "rbxassetid://7733964646",
+    ["code"] = "rbxassetid://7733964647",
+    ["box"] = "rbxassetid://7733964648",
+    ["star"] = "rbxassetid://7733964649",
+    ["heart"] = "rbxassetid://7733964650"
+}
+
 -- THEMES
 local themes = {
     Dark = {
@@ -138,8 +156,14 @@ local themes = {
     }
 }
 
--- Lucide icon asset fallback (for demo, all icons use this asset)
-local lucideAsset = "rbxassetid://7733964641"
+-- Get icon asset (either Lucide name or Roblox asset id)
+local function getIconAsset(icon)
+    if not icon or icon == 0 then return nil end
+    if type(icon) == "string" then
+        return lucideIcons[icon] or lucideIcons["box"] -- fallback to box icon
+    end
+    return "rbxassetid://" .. tostring(icon)
+end
 
 local Photon = {}
 Photon.__index = Photon
@@ -151,6 +175,7 @@ local Section = {}
 Section.__index = Section
 
 function Photon:CreateWindow(options)
+    if _G.PhotonWindow then _G.PhotonWindow:Destroy() end
     local self = setmetatable({}, Window)
     local theme = themes[options.Theme] or themes.Dark
     self.Theme = theme
@@ -229,11 +254,7 @@ function Photon:CreateWindow(options)
         icon.Position = UDim2.new(0, 12, 0.5, -16)
         icon.BackgroundTransparency = 1
         icon.ZIndex = 4
-        if type(self.Icon) == "string" then
-            icon.Image = lucideAsset -- In a real system, map Lucide name to asset
-        else
-            icon.Image = "rbxassetid://" .. tostring(self.Icon)
-        end
+        icon.Image = getIconAsset(self.Icon)
     end
     local title = Instance.new("TextLabel", topBar)
     title.Size = UDim2.new(1, 0, 1, 0)
@@ -291,6 +312,7 @@ function Photon:CreateWindow(options)
     self.Tabs = {}
     self.CurrentTab = nil
     self.Theme = theme
+    _G.PhotonWindow = self.Gui
     return self
 end
 
@@ -320,11 +342,7 @@ function Window:CreateTab(options)
         iconImg.Position = UDim2.new(0, 8, 0.5, -12)
         iconImg.BackgroundTransparency = 1
         iconImg.ZIndex = 6
-        if type(icon) == "string" then
-            iconImg.Image = lucideAsset -- In a real system, map Lucide name to asset
-        else
-            iconImg.Image = "rbxassetid://" .. tostring(icon)
-        end
+        iconImg.Image = getIconAsset(icon)
     end
     local tabLabel = Instance.new("TextLabel", tabBtn)
     tabLabel.Size = UDim2.new(1, -40, 1, 0)
@@ -417,134 +435,14 @@ end
 
 -- Add a toggle to a section (column)
 function Section:CreateToggle(options)
-    local toggleFrame = Instance.new("Frame", self.Frame)
-    toggleFrame.Size = UDim2.new(1, -16, 0, 32)
-    toggleFrame.BackgroundTransparency = 1
-    toggleFrame.ZIndex = 9
-
-    local label = Instance.new("TextLabel", toggleFrame)
-    label.Size = UDim2.new(0.7, 0, 1, 0)
-    label.Position = UDim2.new(0, 0, 0, 0)
-    label.BackgroundTransparency = 1
-    label.Text = options.Name or "Toggle"
-    label.Font = Enum.Font.Gotham
-    label.TextSize = 15
-    label.TextColor3 = self.Theme.Accent
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.ZIndex = 10
-
-    local button = Instance.new("TextButton", toggleFrame)
-    button.Size = UDim2.new(0, 44, 0, 24)
-    button.Position = UDim2.new(1, -54, 0.5, -12)
-    button.BackgroundColor3 = options.CurrentValue and self.Theme.Accent or self.Theme.Section
-    button.Text = ""
-    button.AutoButtonColor = false
-    button.ZIndex = 11
-    local buttonCorner = Instance.new("UICorner", button)
-    buttonCorner.CornerRadius = UDim.new(1, 0)
-
-    local circle = Instance.new("Frame", button)
-    circle.Size = UDim2.new(0, 16, 0, 16)
-    circle.Position = options.CurrentValue and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
-    circle.BackgroundColor3 = self.Theme.Accent
-    circle.ZIndex = 12
-    local uicorner = Instance.new("UICorner", circle)
-    uicorner.CornerRadius = UDim.new(1, 0)
-
-    local state = options.CurrentValue or false
-    button.MouseButton1Click:Connect(function()
-        state = not state
-        button.BackgroundColor3 = state and self.Theme.Accent or self.Theme.Section
-        circle.Position = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
-        if options.Callback then
-            options.Callback(state)
-        end
-    end)
+    options.Theme = self.Theme
+    return createToggle(self.Frame, options)
 end
 
 -- Add a slider to a section (column)
 function Section:CreateSlider(options)
-    local min = options.Min or 0
-    local max = options.Max or 10
-    local value = options.Default or min
-
-    local sliderFrame = Instance.new("Frame", self.Frame)
-    sliderFrame.Size = UDim2.new(1, -16, 0, 56)
-    sliderFrame.BackgroundTransparency = 1
-    sliderFrame.ZIndex = 9
-
-    -- Name label (above value)
-    local label = Instance.new("TextLabel", sliderFrame)
-    label.Size = UDim2.new(1, 0, 0, 18)
-    label.Position = UDim2.new(0, 0, 0, 0)
-    label.BackgroundTransparency = 1
-    label.Text = options.Name or "Slider"
-    label.Font = Enum.Font.Gotham
-    label.TextSize = 15
-    label.TextColor3 = self.Theme.Accent
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.ZIndex = 10
-
-    -- Value label (centered, below name, above bar)
-    local valueLabel = Instance.new("TextLabel", sliderFrame)
-    valueLabel.Size = UDim2.new(1, 0, 0, 18)
-    valueLabel.Position = UDim2.new(0, 0, 0, 18)
-    valueLabel.BackgroundTransparency = 1
-    valueLabel.Text = tostring(value)
-    valueLabel.Font = Enum.Font.Gotham
-    valueLabel.TextSize = 15
-    valueLabel.TextColor3 = self.Theme.Accent
-    valueLabel.TextXAlignment = Enum.TextXAlignment.Right
-    valueLabel.ZIndex = 10
-
-    -- Slider bar (below value label)
-    local sliderBar = Instance.new("Frame", sliderFrame)
-    sliderBar.Size = UDim2.new(1, 0, 0, 6)
-    sliderBar.Position = UDim2.new(0, 0, 0, 36)
-    sliderBar.BackgroundColor3 = self.Theme.Section
-    sliderBar.ZIndex = 11
-    local sliderBarCorner = Instance.new("UICorner", sliderBar)
-    sliderBarCorner.CornerRadius = UDim.new(1, 0)
-
-    local sliderFill = Instance.new("Frame", sliderBar)
-    sliderFill.Size = UDim2.new((value-min)/(max-min), 0, 1, 0)
-    sliderFill.BackgroundColor3 = self.Theme.Accent
-    sliderFill.ZIndex = 12
-    local sliderFillCorner = Instance.new("UICorner", sliderFill)
-    sliderFillCorner.CornerRadius = UDim.new(1, 0)
-
-    local UserInputService = game:GetService("UserInputService")
-    local dragging = false
-    local window = self.Frame.Parent.Parent.Parent.Parent -- main window frame
-
-    local function updateSlider(input)
-        local rel = (input.Position.X - sliderBar.AbsolutePosition.X) / sliderBar.AbsoluteSize.X
-        rel = math.clamp(rel, 0, 1)
-        value = math.floor((min + (max-min)*rel)*100)/100
-        sliderFill.Size = UDim2.new(rel, 0, 1, 0)
-        valueLabel.Text = tostring(value)
-        if options.Callback then options.Callback(value) end
-    end
-
-    sliderBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            if window then window.Draggable = false end
-            updateSlider(input)
-        end
-    end)
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            updateSlider(input)
-        end
-    end)
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-            if window then window.Draggable = true end
-        end
-    end)
-    if options.Callback then options.Callback(value) end
+    options.Theme = self.Theme
+    return createSlider(self.Frame, options)
 end
 
 function Section:CreateKeybind(options)
@@ -593,7 +491,18 @@ end
 
 -- Add Color Picker to Section
 function Section:CreateColorPicker(options)
-    local colorFrame = Instance.new("Frame", self.Frame)
+    options.Theme = self.Theme
+    return createColorPicker(self.Frame, options)
+end
+
+function Section:CreateDropdown(options)
+    options.Theme = self.Theme
+    return createDropdown(self.Frame, options)
+end
+
+-- Color Picker UI
+local function createColorPicker(parent, options)
+    local colorFrame = Instance.new("Frame", parent)
     colorFrame.Size = UDim2.new(1, -16, 0, 36)
     colorFrame.BackgroundTransparency = 1
     colorFrame.ZIndex = 9
@@ -605,7 +514,7 @@ function Section:CreateColorPicker(options)
     label.Text = options.Name or "Color"
     label.Font = Enum.Font.Gotham
     label.TextSize = 15
-    label.TextColor3 = self.Theme.Accent
+    label.TextColor3 = options.Theme.Text
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.ZIndex = 10
 
@@ -618,20 +527,229 @@ function Section:CreateColorPicker(options)
     local colorBtnCorner = Instance.new("UICorner", colorBtn)
     colorBtnCorner.CornerRadius = UDim.new(1, 0)
 
+    -- Color picker popup
+    local popup = Instance.new("Frame", colorFrame)
+    popup.Size = UDim2.new(0, 200, 0, 200)
+    popup.Position = UDim2.new(1, 10, 0, 0)
+    popup.BackgroundColor3 = options.Theme.Section
+    popup.BorderSizePixel = 0
+    popup.Visible = false
+    popup.ZIndex = 20
+    local popupCorner = Instance.new("UICorner", popup)
+    popupCorner.CornerRadius = UDim.new(0, 8)
+
+    -- Color wheel (simplified for demo)
+    local wheel = Instance.new("ImageLabel", popup)
+    wheel.Size = UDim2.new(0.8, 0, 0.8, 0)
+    wheel.Position = UDim2.new(0.1, 0, 0.1, 0)
+    wheel.BackgroundTransparency = 1
+    wheel.Image = "rbxassetid://4155801252" -- color wheel image
+    wheel.ZIndex = 21
+
+    -- RGB inputs
+    local rgbFrame = Instance.new("Frame", popup)
+    rgbFrame.Size = UDim2.new(0.8, 0, 0.15, 0)
+    rgbFrame.Position = UDim2.new(0.1, 0, 0.9, 0)
+    rgbFrame.BackgroundTransparency = 1
+    rgbFrame.ZIndex = 21
+
+    local function createRGBInput(name, y)
+        local input = Instance.new("TextBox", rgbFrame)
+        input.Size = UDim2.new(0.3, 0, 1, 0)
+        input.Position = UDim2.new(y * 0.33, 0, 0, 0)
+        input.BackgroundColor3 = options.Theme.Main
+        input.Text = "0"
+        input.Font = Enum.Font.Gotham
+        input.TextSize = 14
+        input.TextColor3 = options.Theme.Text
+        input.ZIndex = 22
+        local inputCorner = Instance.new("UICorner", input)
+        inputCorner.CornerRadius = UDim.new(0, 4)
+        return input
+    end
+
+    local rInput = createRGBInput("R", 0)
+    local gInput = createRGBInput("G", 1)
+    local bInput = createRGBInput("B", 2)
+
+    -- Show/hide popup
     colorBtn.MouseButton1Click:Connect(function()
-        -- Simple color cycle for demonstration (red -> green -> blue)
-        local current = colorBtn.BackgroundColor3
-        local nextColor = Color3.fromRGB(0,255,0)
-        if current == Color3.fromRGB(0,255,0) then nextColor = Color3.fromRGB(0,0,255)
-        elseif current == Color3.fromRGB(0,0,255) then nextColor = Color3.fromRGB(255,0,0)
-        elseif current == Color3.fromRGB(255,0,0) then nextColor = Color3.fromRGB(0,255,0) end
-        colorBtn.BackgroundColor3 = nextColor
-        if options.Callback then options.Callback(nextColor) end
+        popup.Visible = not popup.Visible
     end)
+
+    -- Update color from wheel (simplified)
+    wheel.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            local pos = input.Position
+            local relX = (pos.X - wheel.AbsolutePosition.X) / wheel.AbsoluteSize.X
+            local relY = (pos.Y - wheel.AbsolutePosition.Y) / wheel.AbsoluteSize.Y
+            -- Convert position to color (simplified)
+            local color = Color3.fromHSV(relX, relY, 1)
+            colorBtn.BackgroundColor3 = color
+            if options.Callback then options.Callback(color) end
+        end
+    end)
+
+    -- Update color from RGB inputs
+    local function updateFromRGB()
+        local r = tonumber(rInput.Text) or 0
+        local g = tonumber(gInput.Text) or 0
+        local b = tonumber(bInput.Text) or 0
+        local color = Color3.fromRGB(r, g, b)
+        colorBtn.BackgroundColor3 = color
+        if options.Callback then options.Callback(color) end
+    end
+
+    rInput.FocusLost:Connect(updateFromRGB)
+    gInput.FocusLost:Connect(updateFromRGB)
+    bInput.FocusLost:Connect(updateFromRGB)
+
+    return colorFrame
 end
 
-function Section:CreateDropdown(options)
-    local dropdownFrame = Instance.new("Frame", self.Frame)
+-- Enhanced Toggle
+local function createToggle(parent, options)
+    local toggleFrame = Instance.new("Frame", parent)
+    toggleFrame.Size = UDim2.new(1, -16, 0, 32)
+    toggleFrame.BackgroundTransparency = 1
+    toggleFrame.ZIndex = 9
+
+    local label = Instance.new("TextLabel", toggleFrame)
+    label.Size = UDim2.new(0.7, 0, 1, 0)
+    label.Position = UDim2.new(0, 0, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = options.Name or "Toggle"
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 15
+    label.TextColor3 = options.Theme.Text
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.ZIndex = 10
+
+    local button = Instance.new("TextButton", toggleFrame)
+    button.Size = UDim2.new(0, 44, 0, 24)
+    button.Position = UDim2.new(1, -54, 0.5, -12)
+    button.BackgroundColor3 = options.CurrentValue and options.Theme.Accent or options.Theme.Section
+    button.Text = ""
+    button.AutoButtonColor = false
+    button.ZIndex = 11
+    local buttonCorner = Instance.new("UICorner", button)
+    buttonCorner.CornerRadius = UDim.new(1, 0)
+
+    local circle = Instance.new("Frame", button)
+    circle.Size = UDim2.new(0, 16, 0, 16)
+    circle.Position = options.CurrentValue and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+    circle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    circle.ZIndex = 12
+    local circleCorner = Instance.new("UICorner", circle)
+    circleCorner.CornerRadius = UDim.new(1, 0)
+
+    -- Smooth animation
+    local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    local state = options.CurrentValue or false
+
+    button.MouseButton1Click:Connect(function()
+        state = not state
+        local targetPos = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+        local targetColor = state and options.Theme.Accent or options.Theme.Section
+        
+        local tween1 = game:GetService("TweenService"):Create(circle, tweenInfo, {Position = targetPos})
+        local tween2 = game:GetService("TweenService"):Create(button, tweenInfo, {BackgroundColor3 = targetColor})
+        
+        tween1:Play()
+        tween2:Play()
+        
+        if options.Callback then options.Callback(state) end
+    end)
+
+    return toggleFrame
+end
+
+-- Enhanced Slider
+local function createSlider(parent, options)
+    local sliderFrame = Instance.new("Frame", parent)
+    sliderFrame.Size = UDim2.new(1, -16, 0, 56)
+    sliderFrame.BackgroundTransparency = 1
+    sliderFrame.ZIndex = 9
+
+    local label = Instance.new("TextLabel", sliderFrame)
+    label.Size = UDim2.new(1, 0, 0, 18)
+    label.Position = UDim2.new(0, 0, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = options.Name or "Slider"
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 15
+    label.TextColor3 = options.Theme.Text
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.ZIndex = 10
+
+    local valueLabel = Instance.new("TextLabel", sliderFrame)
+    valueLabel.Size = UDim2.new(1, 0, 0, 18)
+    valueLabel.Position = UDim2.new(0, 0, 0, 18)
+    valueLabel.BackgroundTransparency = 1
+    valueLabel.Text = tostring(options.Default or options.Min or 0)
+    valueLabel.Font = Enum.Font.Gotham
+    valueLabel.TextSize = 15
+    valueLabel.TextColor3 = options.Theme.Text
+    valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+    valueLabel.ZIndex = 10
+
+    local sliderBar = Instance.new("Frame", sliderFrame)
+    sliderBar.Size = UDim2.new(1, 0, 0, 6)
+    sliderBar.Position = UDim2.new(0, 0, 0, 36)
+    sliderBar.BackgroundColor3 = options.Theme.Section
+    sliderBar.ZIndex = 11
+    local sliderBarCorner = Instance.new("UICorner", sliderBar)
+    sliderBarCorner.CornerRadius = UDim.new(1, 0)
+
+    local sliderFill = Instance.new("Frame", sliderBar)
+    sliderFill.Size = UDim2.new((options.Default or options.Min or 0)/(options.Max or 10), 0, 1, 0)
+    sliderFill.BackgroundColor3 = options.Theme.Accent
+    sliderFill.ZIndex = 12
+    local sliderFillCorner = Instance.new("UICorner", sliderFill)
+    sliderFillCorner.CornerRadius = UDim.new(1, 0)
+
+    local min = options.Min or 0
+    local max = options.Max or 10
+    local value = options.Default or min
+    local dragging = false
+    local window = sliderFrame.Parent.Parent.Parent.Parent -- main window frame
+
+    local function updateSlider(input)
+        local rel = (input.Position.X - sliderBar.AbsolutePosition.X) / sliderBar.AbsoluteSize.X
+        rel = math.clamp(rel, 0, 1)
+        value = math.floor((min + (max-min)*rel)*100)/100
+        sliderFill.Size = UDim2.new(rel, 0, 1, 0)
+        valueLabel.Text = tostring(value)
+        if options.Callback then options.Callback(value) end
+    end
+
+    sliderBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            if window then window.Draggable = false end
+            updateSlider(input)
+        end
+    end)
+
+    game:GetService("UserInputService").InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            updateSlider(input)
+        end
+    end)
+
+    game:GetService("UserInputService").InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+            if window then window.Draggable = true end
+        end
+    end)
+
+    return sliderFrame
+end
+
+-- Enhanced Dropdown
+local function createDropdown(parent, options)
+    local dropdownFrame = Instance.new("Frame", parent)
     dropdownFrame.Size = UDim2.new(1, -16, 0, 36)
     dropdownFrame.BackgroundTransparency = 1
     dropdownFrame.ZIndex = 9
@@ -643,56 +761,102 @@ function Section:CreateDropdown(options)
     label.Text = options.Name or "Dropdown"
     label.Font = Enum.Font.Gotham
     label.TextSize = 15
-    label.TextColor3 = self.Theme.Accent
+    label.TextColor3 = options.Theme.Text
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.ZIndex = 10
 
     local dropBtn = Instance.new("TextButton", dropdownFrame)
     dropBtn.Size = UDim2.new(0, 80, 0, 24)
     dropBtn.Position = UDim2.new(1, -90, 0.5, -12)
-    dropBtn.BackgroundColor3 = self.Theme.Section
+    dropBtn.BackgroundColor3 = options.Theme.Section
     dropBtn.Text = options.Default or options.Options[1]
     dropBtn.Font = Enum.Font.Gotham
     dropBtn.TextSize = 14
-    dropBtn.TextColor3 = self.Theme.Accent
+    dropBtn.TextColor3 = options.Theme.Text
     dropBtn.ZIndex = 11
     local dropBtnCorner = Instance.new("UICorner", dropBtn)
     dropBtnCorner.CornerRadius = UDim.new(1, 0)
 
     local open = false
     local dropdownList
+    local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+
     dropBtn.MouseButton1Click:Connect(function()
         if open then
-            if dropdownList then dropdownList:Destroy() end
+            if dropdownList then
+                local tween = game:GetService("TweenService"):Create(dropdownList, tweenInfo, {
+                    Size = UDim2.new(0, 80, 0, 0),
+                    BackgroundTransparency = 1
+                })
+                tween:Play()
+                tween.Completed:Connect(function()
+                    dropdownList:Destroy()
+                end)
+            end
             open = false
             return
         end
+
         open = true
         dropdownList = Instance.new("Frame", dropdownFrame)
-        dropdownList.Size = UDim2.new(0, 80, 0, #options.Options * 22)
+        dropdownList.Size = UDim2.new(0, 80, 0, 0)
         dropdownList.Position = UDim2.new(1, -90, 1, 0)
-        dropdownList.BackgroundColor3 = self.Theme.Section
+        dropdownList.BackgroundColor3 = options.Theme.Section
+        dropdownList.BackgroundTransparency = 1
         dropdownList.ZIndex = 12
+        local listCorner = Instance.new("UICorner", dropdownList)
+        listCorner.CornerRadius = UDim.new(0, 8)
+
         local listLayout = Instance.new("UIListLayout", dropdownList)
         listLayout.FillDirection = Enum.FillDirection.Vertical
         listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        listLayout.Padding = UDim.new(0, 2)
+
         for _, opt in ipairs(options.Options) do
             local optBtn = Instance.new("TextButton", dropdownList)
             optBtn.Size = UDim2.new(1, 0, 0, 22)
-            optBtn.BackgroundColor3 = self.Theme.Section
+            optBtn.BackgroundColor3 = options.Theme.Section
             optBtn.Text = opt
             optBtn.Font = Enum.Font.Gotham
             optBtn.TextSize = 14
-            optBtn.TextColor3 = self.Theme.Accent
+            optBtn.TextColor3 = options.Theme.Text
             optBtn.ZIndex = 13
+            optBtn.BackgroundTransparency = 1
+            local optCorner = Instance.new("UICorner", optBtn)
+            optCorner.CornerRadius = UDim.new(0, 4)
+
+            optBtn.MouseEnter:Connect(function()
+                optBtn.BackgroundTransparency = 0.8
+            end)
+
+            optBtn.MouseLeave:Connect(function()
+                optBtn.BackgroundTransparency = 1
+            end)
+
             optBtn.MouseButton1Click:Connect(function()
                 dropBtn.Text = opt
                 if options.Callback then options.Callback(opt) end
-                dropdownList:Destroy()
+                local tween = game:GetService("TweenService"):Create(dropdownList, tweenInfo, {
+                    Size = UDim2.new(0, 80, 0, 0),
+                    BackgroundTransparency = 1
+                })
+                tween:Play()
+                tween.Completed:Connect(function()
+                    dropdownList:Destroy()
+                end)
                 open = false
             end)
         end
+
+        local targetSize = UDim2.new(0, 80, 0, #options.Options * 22 + (#options.Options-1) * 2)
+        local tween = game:GetService("TweenService"):Create(dropdownList, tweenInfo, {
+            Size = targetSize,
+            BackgroundTransparency = 0
+        })
+        tween:Play()
     end)
+
+    return dropdownFrame
 end
 
 -- Example usage for executor (Rayfield-style):
