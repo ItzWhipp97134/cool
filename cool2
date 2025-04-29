@@ -360,36 +360,45 @@ function Photon:CreateColorPicker(options)
     colorBtn.Text = ""
     local open = false
     local popup
+    local presetColors = {
+        Color3.fromRGB(255,255,255), -- White
+        Color3.fromRGB(0,0,0),       -- Black
+        Color3.fromRGB(255,0,0),     -- Red
+        Color3.fromRGB(0,255,0),     -- Green
+        Color3.fromRGB(0,0,255),     -- Blue
+        Color3.fromRGB(255,255,0),   -- Yellow
+        Color3.fromRGB(255,0,255),   -- Magenta
+        Color3.fromRGB(0,255,255),   -- Cyan
+        Color3.fromRGB(128,128,128), -- Gray
+        Color3.fromRGB(255,128,0),   -- Orange
+    }
     colorBtn.MouseButton1Click:Connect(function()
         if open then if popup then popup:Destroy() end open = false return end
         open = true
         popup = Instance.new("Frame", colorFrame)
-        popup.Size = UDim2.new(0, 120, 0, 80)
+        popup.Size = UDim2.new(0, 180, 0, 44)
         popup.Position = UDim2.new(1, 10, 0, 0)
         popup.BackgroundColor3 = theme.Section
-        local r = Instance.new("TextBox", popup)
-        r.Size = UDim2.new(0, 36, 0, 24)
-        r.Position = UDim2.new(0, 4, 0, 4)
-        r.Text = tostring(math.floor((colorBtn.BackgroundColor3.R or 1)*255))
-        local g = Instance.new("TextBox", popup)
-        g.Size = UDim2.new(0, 36, 0, 24)
-        g.Position = UDim2.new(0, 44, 0, 4)
-        g.Text = tostring(math.floor((colorBtn.BackgroundColor3.G or 1)*255))
-        local b = Instance.new("TextBox", popup)
-        b.Size = UDim2.new(0, 36, 0, 24)
-        b.Position = UDim2.new(0, 84, 0, 4)
-        b.Text = tostring(math.floor((colorBtn.BackgroundColor3.B or 1)*255))
-        local ok = Instance.new("TextButton", popup)
-        ok.Size = UDim2.new(1, -8, 0, 24)
-        ok.Position = UDim2.new(0, 4, 0, 36)
-        ok.Text = "Set"
-        ok.MouseButton1Click:Connect(function()
-            local color = Color3.fromRGB(tonumber(r.Text) or 255, tonumber(g.Text) or 255, tonumber(b.Text) or 255)
-            colorBtn.BackgroundColor3 = color
-            if options.Callback then options.Callback(color) end
-            popup:Destroy()
-            open = false
-        end)
+        popup.BorderSizePixel = 0
+        local paletteLayout = Instance.new("UIListLayout", popup)
+        paletteLayout.FillDirection = Enum.FillDirection.Horizontal
+        paletteLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+        paletteLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        paletteLayout.Padding = UDim.new(0, 6)
+        for _, col in ipairs(presetColors) do
+            local swatch = Instance.new("TextButton", popup)
+            swatch.Size = UDim2.new(0, 28, 0, 28)
+            swatch.BackgroundColor3 = col
+            swatch.Text = ""
+            local swatchCorner = Instance.new("UICorner", swatch)
+            swatchCorner.CornerRadius = UDim.new(1, 0)
+            swatch.MouseButton1Click:Connect(function()
+                colorBtn.BackgroundColor3 = col
+                if options.Callback then options.Callback(col) end
+                popup:Destroy()
+                open = false
+            end)
+        end
     end)
     self.Controls = self.Controls or {}
     table.insert(self.Controls, colorFrame)
