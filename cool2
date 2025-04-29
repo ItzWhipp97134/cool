@@ -26,6 +26,31 @@ local themes = {
 
 local currentTheme = themes.Default
 
+local function updateControlTheme(ctrl, theme)
+    if ctrl.ClassName == "TextButton" then
+        if ctrl.Name == "ToggleButton" then
+            ctrl.BackgroundColor3 = theme.Section
+        elseif ctrl.Name == "ColorButton" then
+            -- keep color
+        else
+            ctrl.BackgroundColor3 = theme.Accent
+            ctrl.TextColor3 = theme.Text
+        end
+    elseif ctrl.ClassName == "Frame" then
+        if ctrl.Name == "ToggleCircle" then
+            ctrl.BackgroundColor3 = theme.Accent
+        else
+            ctrl.BackgroundColor3 = theme.Section
+        end
+    elseif ctrl.ClassName == "TextLabel" then
+        ctrl.TextColor3 = theme.Text
+    end
+    -- Recursively update children
+    for _, child in ipairs(ctrl:GetChildren()) do
+        updateControlTheme(child, theme)
+    end
+end
+
 local function applyTheme(self, themeName)
     local theme = themes[themeName] or themes.Default
     currentTheme = theme
@@ -43,19 +68,7 @@ local function applyTheme(self, themeName)
                     if section.Label then section.Label.TextColor3 = theme.Accent end
                     if section.Controls then
                         for _, ctrl in ipairs(section.Controls) do
-                            if ctrl.ClassName == "TextButton" or ctrl.ClassName == "Frame" then
-                                if ctrl:IsA("TextButton") and ctrl.Name == "ToggleButton" then
-                                    ctrl.BackgroundColor3 = theme.Section
-                                elseif ctrl:IsA("Frame") and ctrl.Name == "ToggleCircle" then
-                                    ctrl.BackgroundColor3 = theme.Accent
-                                elseif ctrl:IsA("TextButton") and ctrl.Name == "ColorButton" then
-                                    -- keep color
-                                elseif ctrl:IsA("TextButton") then
-                                    ctrl.BackgroundColor3 = theme.Accent
-                                elseif ctrl:IsA("Frame") then
-                                    ctrl.BackgroundColor3 = theme.Section
-                                end
-                            end
+                            updateControlTheme(ctrl, theme)
                         end
                     end
                 end
@@ -540,5 +553,57 @@ function Photon:CreateLabel(options)
     table.insert(self.Controls, label)
     return label
 end
+
+-- Wallhop Macro State
+local wallhopEnabled = false
+local wallhopKey = Enum.KeyCode.Q
+local flickAngle = math.rad(45)
+local flickSpeed = 0.04
+local wallhopActive = false
+local flickState = false
+local originalCFrame = nil
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+-- Wallhop Macro Logic
+spawn(function()
+    while true do
+        if wallhopEnabled and wallhopActive then
+            -- Jump
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+                LocalPlayer.Character:FindFirstChildOfClass("Humanoid").Jump = true
+            end
+            -- Camera flick
+            if not flickState then
+                Camera.CFrame = originalCFrame * CFrame.Angles(0, flickAngle, 0)
+                flickState = true
+            else
+                Camera.CFrame = originalCFrame
+                flickState = false
+            end
+            task.wait(flickSpeed)
+        else
+            task.wait(0.05)
+        end
+    end
+end)
+
+UserInputService.InputBegan:Connect(function(input, processed)
+    if not processed and wallhopEnabled and input.KeyCode == wallhopKey then
+        wallhopActive = true
+        originalCFrame = Camera.CFrame
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input, processed)
+    if wallhopEnabled and input.KeyCode == wallhopKey then
+        wallhopActive = false
+        flickState = false
+        if originalCFrame then
+            Camera.CFrame = originalCFrame
+        end
+    end
+end)
 
 return setmetatable({}, Photon)
