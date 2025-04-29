@@ -1,7 +1,7 @@
-
 -- Photon-Style Custom UI Library (Rayfield Compatible API)
 
 local BestHub = {}
+BestHub.__index = BestHub
 
 -- Store internal references
 local UIS = game:GetService("UserInputService")
@@ -48,22 +48,90 @@ end
 
 -- Tab simulation
 local Tabs = {}
-function BestHub:CreateWindow(options)
-    local self = {}
+function BestHub:CreateWindow(settings)
+    local self = setmetatable({}, BestHub)
 
-    function self:CreateTab(tabOptions)
-        local Tab = {}
-        local tabButton = CreateNavButton(tabOptions.Name or "Tab")
-        Tabs[tabOptions.Name] = tabButton
+    self.Name = settings.Name or "Photon UI"
+    self.Tabs = {}
 
-        function Tab:CreateSection(name)
-            local Section = {}
-            -- Placeholder logic
-            print("Created section:", name)
-            return Section
+    function self:CreateTab(tabSettings)
+        local tab = {
+            Name = tabSettings.Name or "New Tab",
+            Elements = {}
+        }
+
+        local tabButton = CreateNavButton(tab.Name)
+        Tabs[tab.Name] = tabButton
+
+        function tab:AddToggle(toggleSettings)
+            local toggle = {
+                Type = "Toggle",
+                Name = toggleSettings.Name or "New Toggle",
+                Default = toggleSettings.Default or false,
+                Callback = toggleSettings.Callback or function() end
+            }
+
+            toggle.Value = toggle.Default
+
+            function toggle:Set(value)
+                toggle.Value = value
+                toggle.Callback(value)
+            end
+
+            table.insert(tab.Elements, toggle)
+            return toggle
         end
 
-        return Tab
+        function tab:AddSlider(sliderSettings)
+            local slider = {
+                Type = "Slider",
+                Name = sliderSettings.Name or "New Slider",
+                Min = sliderSettings.Min or 0,
+                Max = sliderSettings.Max or 100,
+                Default = sliderSettings.Default or 50,
+                Callback = sliderSettings.Callback or function() end
+            }
+
+            slider.Value = slider.Default
+
+            function slider:Set(value)
+                if value >= slider.Min and value <= slider.Max then
+                    slider.Value = value
+                    slider.Callback(value)
+                end
+            end
+
+            table.insert(tab.Elements, slider)
+            return slider
+        end
+
+        function tab:AddButton(buttonSettings)
+            local button = {
+                Type = "Button",
+                Name = buttonSettings.Name or "New Button",
+                Callback = buttonSettings.Callback or function() end
+            }
+
+            function button:Press()
+                button.Callback()
+            end
+
+            table.insert(tab.Elements, button)
+            return button
+        end
+
+        function tab:AddSection(sectionName)
+            local section = {
+                Type = "Section",
+                Name = sectionName or "Section"
+            }
+
+            table.insert(tab.Elements, section)
+            return section
+        end
+
+        table.insert(self.Tabs, tab)
+        return tab
     end
 
     return self
