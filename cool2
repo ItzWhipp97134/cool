@@ -83,53 +83,76 @@ UserInputService.InputEnded:Connect(function(input, processed)
     end
 end)
 
-local Photon = {}
-Photon.__index = Photon
+-- photon.lua: Rayfield-inspired, modern, beautiful, customizable UI library
+-- Sidebar icons (Lucide or Roblox asset id), multiple themes, Rayfield-style API
 
-local Window = {}
-Window.__index = Window
-
-local Tab = {}
-Tab.__index = Tab
-
-local Section = {}
-Section.__index = Section
-
--- Theme definitions
+-- THEMES
 local themes = {
-    Default = {
+    Dark = {
         Main = Color3.fromRGB(28, 28, 34),
         TopBar = Color3.fromRGB(35, 35, 40),
         Sidebar = Color3.fromRGB(24, 24, 28),
         Section = Color3.fromRGB(38, 38, 48),
-        Accent = Color3.fromRGB(60, 120, 200)
-    },
-    Red = {
-        Main = Color3.fromRGB(34, 28, 28),
-        TopBar = Color3.fromRGB(60, 30, 30),
-        Sidebar = Color3.fromRGB(40, 20, 20),
-        Section = Color3.fromRGB(60, 40, 40),
-        Accent = Color3.fromRGB(200, 60, 60)
-    },
-    Blue = {
-        Main = Color3.fromRGB(28, 34, 40),
-        TopBar = Color3.fromRGB(35, 40, 60),
-        Sidebar = Color3.fromRGB(24, 28, 40),
-        Section = Color3.fromRGB(38, 48, 60),
-        Accent = Color3.fromRGB(60, 120, 200)
+        Accent = Color3.fromRGB(60, 120, 200),
+        Text = Color3.fromRGB(220, 220, 230)
     },
     Light = {
         Main = Color3.fromRGB(230, 230, 240),
         TopBar = Color3.fromRGB(210, 210, 220),
         Sidebar = Color3.fromRGB(200, 200, 210),
         Section = Color3.fromRGB(220, 220, 230),
-        Accent = Color3.fromRGB(60, 120, 200)
+        Accent = Color3.fromRGB(60, 120, 200),
+        Text = Color3.fromRGB(40, 40, 50)
+    },
+    Red = {
+        Main = Color3.fromRGB(34, 28, 28),
+        TopBar = Color3.fromRGB(60, 30, 30),
+        Sidebar = Color3.fromRGB(40, 20, 20),
+        Section = Color3.fromRGB(60, 40, 40),
+        Accent = Color3.fromRGB(200, 60, 60),
+        Text = Color3.fromRGB(255, 220, 220)
+    },
+    Blue = {
+        Main = Color3.fromRGB(28, 34, 40),
+        TopBar = Color3.fromRGB(35, 40, 60),
+        Sidebar = Color3.fromRGB(24, 28, 40),
+        Section = Color3.fromRGB(38, 48, 60),
+        Accent = Color3.fromRGB(60, 120, 200),
+        Text = Color3.fromRGB(220, 230, 255)
+    },
+    Green = {
+        Main = Color3.fromRGB(28, 34, 28),
+        TopBar = Color3.fromRGB(35, 60, 35),
+        Sidebar = Color3.fromRGB(24, 40, 24),
+        Section = Color3.fromRGB(38, 60, 38),
+        Accent = Color3.fromRGB(60, 200, 120),
+        Text = Color3.fromRGB(220, 255, 220)
+    },
+    Purple = {
+        Main = Color3.fromRGB(34, 28, 40),
+        TopBar = Color3.fromRGB(60, 35, 60),
+        Sidebar = Color3.fromRGB(40, 24, 40),
+        Section = Color3.fromRGB(60, 38, 60),
+        Accent = Color3.fromRGB(160, 60, 200),
+        Text = Color3.fromRGB(240, 220, 255)
     }
 }
 
+-- Lucide icon asset fallback (for demo, all icons use this asset)
+local lucideAsset = "rbxassetid://7733964641"
+
+local Photon = {}
+Photon.__index = Photon
+local Window = {}
+Window.__index = Window
+local Tab = {}
+Tab.__index = Tab
+local Section = {}
+Section.__index = Section
+
 function Photon:CreateWindow(options)
     local self = setmetatable({}, Window)
-    local theme = themes[options.Theme] or themes.Default
+    local theme = themes[options.Theme] or themes.Dark
     self.Theme = theme
     self.Name = options.Name or "PhotonUI"
     self.Icon = options.Icon or 0
@@ -174,15 +197,15 @@ function Photon:CreateWindow(options)
 
     -- Main window frame
     local main = Instance.new("Frame", gui)
-    main.Size = UDim2.new(0, 900, 0, 500)
-    main.Position = UDim2.new(0.5, -450, 0.5, -250)
+    main.Size = UDim2.new(0, 900, 0, 540)
+    main.Position = UDim2.new(0.5, -450, 0.5, -270)
     main.BackgroundColor3 = theme.Main
     main.BorderSizePixel = 0
     main.Active = true
     main.Draggable = true
     main.ZIndex = 2
     local mainCorner = Instance.new("UICorner", main)
-    mainCorner.CornerRadius = UDim.new(0, 12)
+    mainCorner.CornerRadius = UDim.new(0, 14)
     local shadow = Instance.new("ImageLabel", main)
     shadow.Image = "rbxassetid://1316045217"
     shadow.BackgroundTransparency = 1
@@ -193,22 +216,21 @@ function Photon:CreateWindow(options)
 
     -- Top Bar
     local topBar = Instance.new("Frame", main)
-    topBar.Size = UDim2.new(1, 0, 0, 44)
+    topBar.Size = UDim2.new(1, 0, 0, 48)
     topBar.BackgroundColor3 = theme.TopBar
     topBar.BorderSizePixel = 0
     topBar.ZIndex = 3
     local topBarCorner = Instance.new("UICorner", topBar)
-    topBarCorner.CornerRadius = UDim.new(0, 12)
+    topBarCorner.CornerRadius = UDim.new(0, 14)
     -- Icon
     if self.Icon and self.Icon ~= 0 then
         local icon = Instance.new("ImageLabel", topBar)
         icon.Size = UDim2.new(0, 32, 0, 32)
-        icon.Position = UDim2.new(0, 8, 0.5, -16)
+        icon.Position = UDim2.new(0, 12, 0.5, -16)
         icon.BackgroundTransparency = 1
         icon.ZIndex = 4
         if type(self.Icon) == "string" then
-            -- Lucide icon (use a Lucide icon asset or fallback)
-            icon.Image = "rbxassetid://7733964641" -- fallback Lucide icon
+            icon.Image = lucideAsset -- In a real system, map Lucide name to asset
         else
             icon.Image = "rbxassetid://" .. tostring(self.Icon)
         end
@@ -221,18 +243,17 @@ function Photon:CreateWindow(options)
     title.TextSize = 22
     title.TextColor3 = theme.Accent
     title.TextXAlignment = Enum.TextXAlignment.Left
-    title.Position = UDim2.new(0, 48, 0, 0)
+    title.Position = UDim2.new(0, 56, 0, 0)
     title.ZIndex = 4
-
     -- Close button
     local close = Instance.new("TextButton", topBar)
     close.Size = UDim2.new(0, 40, 0, 40)
-    close.Position = UDim2.new(1, -48, 0, 2)
-    close.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+    close.Position = UDim2.new(1, -48, 0, 4)
+    close.BackgroundColor3 = theme.Section
     close.Text = "✕"
     close.Font = Enum.Font.GothamBold
     close.TextSize = 18
-    close.TextColor3 = Color3.fromRGB(220, 100, 100)
+    close.TextColor3 = theme.Accent
     close.ZIndex = 5
     local closeCorner = Instance.new("UICorner", close)
     closeCorner.CornerRadius = UDim.new(1, 0)
@@ -240,78 +261,83 @@ function Photon:CreateWindow(options)
         gui:Destroy()
     end)
 
-    -- Sidebar (for tabs)
+    -- Sidebar
     local sidebar = Instance.new("Frame", main)
-    sidebar.Size = UDim2.new(0, 140, 1, -44-48)
-    sidebar.Position = UDim2.new(0, 0, 0, 44)
+    sidebar.Size = UDim2.new(0, 160, 1, -48)
+    sidebar.Position = UDim2.new(0, 0, 0, 48)
     sidebar.BackgroundColor3 = theme.Sidebar
     sidebar.BorderSizePixel = 0
     sidebar.ZIndex = 4
     local sidebarCorner = Instance.new("UICorner", sidebar)
-    sidebarCorner.CornerRadius = UDim.new(0, 10)
+    sidebarCorner.CornerRadius = UDim.new(0, 12)
     local sidebarLayout = Instance.new("UIListLayout", sidebar)
     sidebarLayout.FillDirection = Enum.FillDirection.Vertical
     sidebarLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
     sidebarLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    sidebarLayout.Padding = UDim.new(0, 4)
+    sidebarLayout.Padding = UDim.new(0, 6)
 
-    -- Main Content Area (multi-column)
+    -- Main Content Area
     local content = Instance.new("Frame", main)
-    content.Size = UDim2.new(1, -140, 1, -44-48)
-    content.Position = UDim2.new(0, 140, 0, 44)
+    content.Size = UDim2.new(1, -160, 1, -48)
+    content.Position = UDim2.new(0, 160, 0, 48)
     content.BackgroundTransparency = 1
     content.ZIndex = 5
-
-    -- Bottom Bar (for icon tabs)
-    local bottomBar = Instance.new("Frame", main)
-    bottomBar.Size = UDim2.new(1, 0, 0, 48)
-    bottomBar.Position = UDim2.new(0, 0, 1, -48)
-    bottomBar.BackgroundColor3 = Color3.fromRGB(32, 32, 40)
-    bottomBar.BorderSizePixel = 0
-    bottomBar.ZIndex = 20
-    local bottomBarCorner = Instance.new("UICorner", bottomBar)
-    bottomBarCorner.CornerRadius = UDim.new(0, 12)
-    local bottomLayout = Instance.new("UIListLayout", bottomBar)
-    bottomLayout.FillDirection = Enum.FillDirection.Horizontal
-    bottomLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    bottomLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    bottomLayout.Padding = UDim.new(0, 16)
 
     -- Store references
     self.Gui = gui
     self.Main = main
     self.Sidebar = sidebar
     self.Content = content
-    self.BottomBar = bottomBar
     self.Tabs = {}
     self.CurrentTab = nil
-
+    self.Theme = theme
     return self
 end
 
--- Add a tab to the sidebar
 function Window:CreateTab(options)
     local name = type(options) == "table" and options.Name or tostring(options)
+    local icon = type(options) == "table" and options.Icon or nil
     local selfWindow = self
     local tab = setmetatable({}, Tab)
     tab.Name = name
+    tab.Icon = icon
     tab.Sections = {}
     tab.Columns = {}
+    tab.Theme = self.Theme
 
     -- Sidebar button
-    local btn = Instance.new("TextButton", self.Sidebar)
-    btn.Size = UDim2.new(1, -8, 0, 36)
-    btn.BackgroundColor3 = (#self.Tabs == 0) and Color3.fromRGB(60, 120, 200) or Color3.fromRGB(38, 38, 48)
-    btn.Text = name
-    btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 16
-    btn.TextColor3 = (#self.Tabs == 0) and Color3.fromRGB(255,255,255) or Color3.fromRGB(180, 180, 200)
-    btn.ZIndex = 5
-    local btnCorner = Instance.new("UICorner", btn)
-    btnCorner.CornerRadius = UDim.new(0, 8)
-    tab.Button = btn
+    local tabBtn = Instance.new("TextButton", self.Sidebar)
+    tabBtn.Size = UDim2.new(1, -12, 0, 44)
+    tabBtn.BackgroundColor3 = self.Theme.Section
+    tabBtn.Text = ""
+    tabBtn.ZIndex = 5
+    local tabBtnCorner = Instance.new("UICorner", tabBtn)
+    tabBtnCorner.CornerRadius = UDim.new(0, 10)
+    -- Icon
+    if icon and icon ~= 0 then
+        local iconImg = Instance.new("ImageLabel", tabBtn)
+        iconImg.Size = UDim2.new(0, 24, 0, 24)
+        iconImg.Position = UDim2.new(0, 8, 0.5, -12)
+        iconImg.BackgroundTransparency = 1
+        iconImg.ZIndex = 6
+        if type(icon) == "string" then
+            iconImg.Image = lucideAsset -- In a real system, map Lucide name to asset
+        else
+            iconImg.Image = "rbxassetid://" .. tostring(icon)
+        end
+    end
+    local tabLabel = Instance.new("TextLabel", tabBtn)
+    tabLabel.Size = UDim2.new(1, -40, 1, 0)
+    tabLabel.Position = UDim2.new(0, 40, 0, 0)
+    tabLabel.BackgroundTransparency = 1
+    tabLabel.Text = name
+    tabLabel.Font = Enum.Font.GothamBold
+    tabLabel.TextSize = 17
+    tabLabel.TextColor3 = self.Theme.Text
+    tabLabel.TextXAlignment = Enum.TextXAlignment.Left
+    tabLabel.ZIndex = 6
 
-    -- Tab content frame (multi-column)
+    -- Tab content frame
     local tabContent = Instance.new("Frame", self.Content)
     tabContent.Size = UDim2.new(1, 0, 1, 0)
     tabContent.Position = UDim2.new(0, 0, 0, 0)
@@ -321,44 +347,44 @@ function Window:CreateTab(options)
     tab.ContentFrame = tabContent
 
     -- Tab switching logic
-    btn.MouseButton1Click:Connect(function()
+    tabBtn.MouseButton1Click:Connect(function()
         for _, t in ipairs(self.Tabs) do
-            t.Button.BackgroundColor3 = Color3.fromRGB(38, 38, 48)
-            t.Button.TextColor3 = Color3.fromRGB(180, 180, 200)
+            t.Button.BackgroundColor3 = self.Theme.Section
             t.ContentFrame.Visible = false
         end
-        btn.BackgroundColor3 = Color3.fromRGB(60, 120, 200)
-        btn.TextColor3 = Color3.fromRGB(255,255,255)
+        tabBtn.BackgroundColor3 = self.Theme.Accent
         tabContent.Visible = true
         self.CurrentTab = tab
     end)
-
+    tab.Button = tabBtn
     table.insert(self.Tabs, tab)
     if #self.Tabs == 1 then
+        tabBtn.BackgroundColor3 = self.Theme.Accent
+        tabContent.Visible = true
         self.CurrentTab = tab
     end
     return tab
 end
 
--- Add a section (column) to the current tab
 function Tab:CreateSection(options)
     local name = type(options) == "table" and options.Name or tostring(options)
     local section = setmetatable({}, Section)
     section.Name = name
     section.Controls = {}
+    section.Theme = self.Theme
 
     -- Each section is a column
     local col = Instance.new("Frame", self.ContentFrame)
     local colCount = #self.Columns
-    col.Size = UDim2.new(0, 200, 1, 0)
-    col.Position = UDim2.new(0, colCount * 210, 0, 0)
-    col.BackgroundColor3 = Color3.fromRGB(38, 38, 48)
+    col.Size = UDim2.new(0, 240, 1, 0)
+    col.Position = UDim2.new(0, colCount * 250, 0, 0)
+    col.BackgroundColor3 = self.Theme.Section
     col.BorderSizePixel = 0
     col.ZIndex = 7
     local colCorner = Instance.new("UICorner", col)
-    colCorner.CornerRadius = UDim.new(0, 8)
+    colCorner.CornerRadius = UDim.new(0, 10)
     local colStroke = Instance.new("UIStroke", col)
-    colStroke.Color = Color3.fromRGB(60, 60, 80)
+    colStroke.Color = self.Theme.Accent
     colStroke.Thickness = 1
 
     -- Section Header
@@ -369,7 +395,7 @@ function Tab:CreateSection(options)
     header.Text = name
     header.Font = Enum.Font.GothamBold
     header.TextSize = 16
-    header.TextColor3 = Color3.fromRGB(220, 220, 230)
+    header.TextColor3 = self.Theme.Accent
     header.TextXAlignment = Enum.TextXAlignment.Left
     header.ZIndex = 8
 
@@ -378,7 +404,7 @@ function Tab:CreateSection(options)
     controlLayout.FillDirection = Enum.FillDirection.Vertical
     controlLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
     controlLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    controlLayout.Padding = UDim.new(0, 8)
+    controlLayout.Padding = UDim.new(0, 10)
     controlLayout.Parent = col
 
     section.Frame = col
@@ -403,14 +429,14 @@ function Section:CreateToggle(options)
     label.Text = options.Name or "Toggle"
     label.Font = Enum.Font.Gotham
     label.TextSize = 15
-    label.TextColor3 = Color3.fromRGB(220, 220, 230)
+    label.TextColor3 = self.Theme.Accent
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.ZIndex = 10
 
     local button = Instance.new("TextButton", toggleFrame)
     button.Size = UDim2.new(0, 44, 0, 24)
     button.Position = UDim2.new(1, -54, 0.5, -12)
-    button.BackgroundColor3 = options.CurrentValue and Color3.fromRGB(60, 180, 120) or Color3.fromRGB(60, 60, 80)
+    button.BackgroundColor3 = options.CurrentValue and self.Theme.Accent or self.Theme.Section
     button.Text = ""
     button.AutoButtonColor = false
     button.ZIndex = 11
@@ -420,7 +446,7 @@ function Section:CreateToggle(options)
     local circle = Instance.new("Frame", button)
     circle.Size = UDim2.new(0, 16, 0, 16)
     circle.Position = options.CurrentValue and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
-    circle.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+    circle.BackgroundColor3 = self.Theme.Accent
     circle.ZIndex = 12
     local uicorner = Instance.new("UICorner", circle)
     uicorner.CornerRadius = UDim.new(1, 0)
@@ -428,7 +454,7 @@ function Section:CreateToggle(options)
     local state = options.CurrentValue or false
     button.MouseButton1Click:Connect(function()
         state = not state
-        button.BackgroundColor3 = state and Color3.fromRGB(60, 180, 120) or Color3.fromRGB(60, 60, 80)
+        button.BackgroundColor3 = state and self.Theme.Accent or self.Theme.Section
         circle.Position = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
         if options.Callback then
             options.Callback(state)
@@ -455,7 +481,7 @@ function Section:CreateSlider(options)
     label.Text = options.Name or "Slider"
     label.Font = Enum.Font.Gotham
     label.TextSize = 15
-    label.TextColor3 = Color3.fromRGB(220, 220, 230)
+    label.TextColor3 = self.Theme.Accent
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.ZIndex = 10
 
@@ -467,7 +493,7 @@ function Section:CreateSlider(options)
     valueLabel.Text = tostring(value)
     valueLabel.Font = Enum.Font.Gotham
     valueLabel.TextSize = 15
-    valueLabel.TextColor3 = Color3.fromRGB(220, 220, 230)
+    valueLabel.TextColor3 = self.Theme.Accent
     valueLabel.TextXAlignment = Enum.TextXAlignment.Right
     valueLabel.ZIndex = 10
 
@@ -475,14 +501,14 @@ function Section:CreateSlider(options)
     local sliderBar = Instance.new("Frame", sliderFrame)
     sliderBar.Size = UDim2.new(1, 0, 0, 6)
     sliderBar.Position = UDim2.new(0, 0, 0, 36)
-    sliderBar.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+    sliderBar.BackgroundColor3 = self.Theme.Section
     sliderBar.ZIndex = 11
     local sliderBarCorner = Instance.new("UICorner", sliderBar)
     sliderBarCorner.CornerRadius = UDim.new(1, 0)
 
     local sliderFill = Instance.new("Frame", sliderBar)
     sliderFill.Size = UDim2.new((value-min)/(max-min), 0, 1, 0)
-    sliderFill.BackgroundColor3 = Color3.fromRGB(60, 180, 120)
+    sliderFill.BackgroundColor3 = self.Theme.Accent
     sliderFill.ZIndex = 12
     local sliderFillCorner = Instance.new("UICorner", sliderFill)
     sliderFillCorner.CornerRadius = UDim.new(1, 0)
@@ -534,18 +560,18 @@ function Section:CreateKeybind(options)
     label.Text = options.Name or "Keybind"
     label.Font = Enum.Font.Gotham
     label.TextSize = 15
-    label.TextColor3 = Color3.fromRGB(220, 220, 230)
+    label.TextColor3 = self.Theme.Accent
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.ZIndex = 10
 
     local keyBtn = Instance.new("TextButton", keybindFrame)
     keyBtn.Size = UDim2.new(0, 80, 0, 24)
     keyBtn.Position = UDim2.new(1, -90, 0.5, -12)
-    keyBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+    keyBtn.BackgroundColor3 = self.Theme.Section
     keyBtn.Text = options.DefaultText or "MB2"
     keyBtn.Font = Enum.Font.Gotham
     keyBtn.TextSize = 14
-    keyBtn.TextColor3 = Color3.fromRGB(220, 220, 230)
+    keyBtn.TextColor3 = self.Theme.Accent
     keyBtn.ZIndex = 11
     local keyBtnCorner = Instance.new("UICorner", keyBtn)
     keyBtnCorner.CornerRadius = UDim.new(1, 0)
@@ -579,7 +605,7 @@ function Section:CreateColorPicker(options)
     label.Text = options.Name or "Color"
     label.Font = Enum.Font.Gotham
     label.TextSize = 15
-    label.TextColor3 = Color3.fromRGB(220, 220, 230)
+    label.TextColor3 = self.Theme.Accent
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.ZIndex = 10
 
@@ -617,18 +643,18 @@ function Section:CreateDropdown(options)
     label.Text = options.Name or "Dropdown"
     label.Font = Enum.Font.Gotham
     label.TextSize = 15
-    label.TextColor3 = Color3.fromRGB(220, 220, 230)
+    label.TextColor3 = self.Theme.Accent
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.ZIndex = 10
 
     local dropBtn = Instance.new("TextButton", dropdownFrame)
     dropBtn.Size = UDim2.new(0, 80, 0, 24)
     dropBtn.Position = UDim2.new(1, -90, 0.5, -12)
-    dropBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+    dropBtn.BackgroundColor3 = self.Theme.Section
     dropBtn.Text = options.Default or options.Options[1]
     dropBtn.Font = Enum.Font.Gotham
     dropBtn.TextSize = 14
-    dropBtn.TextColor3 = Color3.fromRGB(220, 220, 230)
+    dropBtn.TextColor3 = self.Theme.Accent
     dropBtn.ZIndex = 11
     local dropBtnCorner = Instance.new("UICorner", dropBtn)
     dropBtnCorner.CornerRadius = UDim.new(1, 0)
@@ -645,7 +671,7 @@ function Section:CreateDropdown(options)
         dropdownList = Instance.new("Frame", dropdownFrame)
         dropdownList.Size = UDim2.new(0, 80, 0, #options.Options * 22)
         dropdownList.Position = UDim2.new(1, -90, 1, 0)
-        dropdownList.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
+        dropdownList.BackgroundColor3 = self.Theme.Section
         dropdownList.ZIndex = 12
         local listLayout = Instance.new("UIListLayout", dropdownList)
         listLayout.FillDirection = Enum.FillDirection.Vertical
@@ -653,11 +679,11 @@ function Section:CreateDropdown(options)
         for _, opt in ipairs(options.Options) do
             local optBtn = Instance.new("TextButton", dropdownList)
             optBtn.Size = UDim2.new(1, 0, 0, 22)
-            optBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+            optBtn.BackgroundColor3 = self.Theme.Section
             optBtn.Text = opt
             optBtn.Font = Enum.Font.Gotham
             optBtn.TextSize = 14
-            optBtn.TextColor3 = Color3.fromRGB(220, 220, 230)
+            optBtn.TextColor3 = self.Theme.Accent
             optBtn.ZIndex = 13
             optBtn.MouseButton1Click:Connect(function()
                 dropBtn.Text = opt
@@ -671,93 +697,19 @@ end
 
 -- Example usage for executor (Rayfield-style):
 local Window = Photon:CreateWindow({
-    Name = "Rayfield Example Window",
-    Icon = 0, -- or Roblox asset id or Lucide string
-    LoadingTitle = "Rayfield Interface Suite",
-    LoadingSubtitle = "by Sirius",
-    Theme = "Red"
+    Name = "Photon Example",
+    Icon = "layout-dashboard", -- Lucide icon name or Roblox asset id
+    Theme = "Purple"
 })
-local Tab = Window:CreateTab({ Name = "Aimbot" })
+local Tab = Window:CreateTab({ Name = "Aimbot", Icon = "target" })
 local Section = Tab:CreateSection({ Name = "Main" })
-
-Section:CreateToggle({
-    Name = "Aimbot Enabled",
-    CurrentValue = false,
-    Callback = function(state)
-        if state then
-            EnableAimbot()
-        else
-            DisableAimbot()
-        end
-    end
-})
-
-Section:CreateSlider({
-    Name = "Smoothness",
-    Min = 1,
-    Max = 10,
-    Default = 3,
-    Callback = function(val)
-        SetAimbotSmoothness(val)
-    end
-})
-
-Section:CreateSlider({
-    Name = "FOV",
-    Min = 10,
-    Max = 300,
-    Default = 100,
-    Callback = function(val)
-        SetAimbotFOV(val)
-    end
-})
-
-Section:CreateKeybind({
-    Name = "Aimbot Keybind",
-    DefaultText = "MB2",
-    Callback = function(newKey)
-        SetAimbotKeybind(newKey)
-    end
-})
-
-Section:CreateDropdown({
-    Name = "Target Part",
-    Options = {"Head", "HumanoidRootPart", "Torso"},
-    Default = "Head",
-    Callback = function(opt)
-        SetAimbotTargetPart(opt)
-    end
-})
-
--- Add Visuals tab with ESP controls
-local VisualsTab = Window:CreateTab({ Name = "Visuals" })
+Section:CreateToggle({ Name = "Aimbot Enabled", CurrentValue = false, Callback = function(state) print("Aimbot", state) end })
+Section:CreateSlider({ Name = "Smoothness", Min = 1, Max = 10, Default = 3, Callback = function(val) print("Smoothness", val) end })
+Section:CreateDropdown({ Name = "Target Part", Options = {"Head", "HumanoidRootPart", "Torso"}, Default = "Head", Callback = function(opt) print("Target", opt) end })
+local VisualsTab = Window:CreateTab({ Name = "Visuals", Icon = "eye" })
 local ESPSection = VisualsTab:CreateSection({ Name = "ESP" })
-ESPSection:CreateToggle({
-    Name = "Box ESP",
-    CurrentValue = false,
-    Callback = function(state)
-        if state then
-            EnableESP()
-        else
-            DisableESP()
-        end
-    end
-})
-ESPSection:CreateColorPicker({
-    Name = "Box Color",
-    Default = Color3.fromRGB(0,255,0),
-    Callback = function(color)
-        SetESPColor(color)
-    end
-})
-ESPSection:CreateSlider({
-    Name = "Box Thickness",
-    Min = 1,
-    Max = 5,
-    Default = 2,
-    Callback = function(val)
-        SetESPThickness(val)
-    end
-})
+ESPSection:CreateToggle({ Name = "Box ESP", CurrentValue = false, Callback = function(state) print("ESP", state) end })
+ESPSection:CreateColorPicker({ Name = "Box Color", Default = Color3.fromRGB(0,255,0), Callback = function(color) print("Color", color) end })
+ESPSection:CreateSlider({ Name = "Box Thickness", Min = 1, Max = 5, Default = 2, Callback = function(val) print("Thickness", val) end })
 
 return setmetatable({}, Photon) 
